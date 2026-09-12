@@ -196,6 +196,11 @@ body { padding-block: var(--s5) var(--s8); }
 .timer { font-size: var(--t-3xl); font-weight:620; text-align:center;
          margin: var(--s5) 0 var(--s4); font-variant-numeric: tabular-nums; letter-spacing:-.02em; }
 .timer[data-live="1"] { color: var(--tally); }
+.level { height:10px; background:var(--carbon-dim); border-radius:99px; overflow:hidden; margin:var(--s3) 0; }
+.level > i { display:block; height:100%; width:0; background:var(--ink-faint); transition:width .06s linear; }
+.level[data-live="1"] > i { background:var(--settled); }
+.reject { background:var(--tally-bg); color:var(--tally); border-radius:var(--r-md);
+          padding:var(--s3); font-size:var(--t-sm); margin-top:var(--s3); }
 .idcard { text-align:center; padding:var(--s4); background:var(--carbon-dim);
           border-radius:var(--r-md); font-size:var(--t-xl); font-weight:620;
           letter-spacing:.06em; font-variant-numeric:tabular-nums; }
@@ -268,6 +273,13 @@ audio { width:100%; margin-top:var(--s4); }
         <option value="generator">Generator or fan running</option>
       </select></label>
 
+    <div class="field">
+      <span class="label">Check your microphone first</span>
+      <button class="btn btn--quiet" id="miccheck" type="button">Test my microphone</button>
+      <div class="level" id="preflight-level" data-live="0" hidden><i></i></div>
+      <p class="hint" id="micresult" style="margin-top:var(--s2)"></p>
+    </div>
+
     <button class="btn" id="start" style="margin-top:var(--s5)" disabled>Start recording</button>
     <p class="hint" id="micnote" style="margin-top:var(--s3)"></p>
   </div>
@@ -285,7 +297,9 @@ audio { width:100%; margin-top:var(--s4); }
   </div>
   <div>
     <div class="timer" id="timer">0.0s</div>
+    <div class="level" id="level" data-live="0"><i id="meter"></i></div>
     <button class="btn btn--record" id="btn">Start speaking</button>
+    <p class="reject hide" id="reject"></p>
     <audio id="play" controls class="hide"></audio>
     <button class="btn btn--quiet hide" id="again" style="margin-top:var(--s3)">Record again</button>
     <button class="btn hide" id="next" style="margin-top:var(--s3)">Keep it, next card</button>
@@ -320,6 +334,20 @@ if(!navigator.mediaDevices||!window.AudioContext) $('micnote').innerHTML =
   '<span style="color:var(--tally)">This browser can\'t record audio. Open this page in Chrome or Safari.</span>';
 
 let ctx, stream, src, node, chunks=[], recording=false, t0=0, timerId;
+let livePeak = 0, takePeak = 0, voicedBlocks = 0, totalBlocks = 0;
+// Below this a block is silence, not quiet speech. 0.01 is about -40 dBFS.
+const SILENCE_PEAK = 0.01;
+// A peak alone is not enough: devices emit a click when the stream opens, and a
+// single pop in an otherwise empty take would sail past a max-based check. Require
+// that a real share of the take actually carries signal.
+const MIN_VOICED_FRACTION = 0.05;
+
+function meterPaint(peak){
+  const el = $('meter'); if (!el) return;
+  // Perceptual-ish curve so normal speech fills a useful part of the bar.
+  el.style.width = Math.min(100, Math.round(Math.sqrt(peak) * 140)) + '%';
+  el.parentElement.dataset.live = peak > SILENCE_PEAK ? '1' : '0';
+}
 let idx=0, results=[], meta={};
 
 function wav(f32, rate){ // Float32 @rate -> 16-bit PCM WAV @16000
@@ -342,15 +370,77 @@ function wav(f32, rate){ // Float32 @rate -> 16-bit PCM WAV @16000
   return {blob:new Blob([buf],{type:'audio/wav'}), dur:pcm.length/target};
 }
 
+$('miccheck').onclick = async () => {
+  const btn = $('miccheck'), out = $('micresult'), bar = $('preflight-level');
+  btn.disabled = true; btn.textContent = 'Listening — say something';
+  bar.hidden = false; out.textContent = '';
+  let s2, c2;
+  try {
+    s2 = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,
+      echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
+    c2 = new AudioContext();
+    if (c2.state === 'suspended') { try { await c2.resume(); } catch {} }
+  } catch (e) {
+    out.innerHTML = '<span style="color:var(--tally)">Microphone blocked. Allow it for this page '
+      + 'in your browser settings, then tap Test again.</span>';
+    btn.disabled = false; btn.textContent = 'Test my microphone'; bar.hidden = true; return;
+  }
+  const an = c2.createAnalyser(); an.fftSize = 1024;
+  c2.createMediaStreamSource(s2).connect(an);
+  const buf = new Float32Array(an.fftSize);
+  let best = 0;
+  const started = Date.now();
+  const tick = setInterval(() => {
+    an.getFloatTimeDomainData(buf);
+    let peak = 0;
+    for (let i = 0; i < buf.length; i++) { const v = Math.abs(buf[i]); if (v > peak) peak = v; }
+    if (peak > best) best = peak;
+    bar.dataset.live = peak > SILENCE_PEAK ? '1' : '0';
+    bar.firstElementChild.style.width = Math.min(100, Math.round(Math.sqrt(peak) * 140)) + '%';
+    if (Date.now() - started > 6000) {
+      clearInterval(tick);
+      s2.getTracks().forEach(t => t.stop()); c2.close();
+      bar.hidden = true; btn.disabled = false; btn.textContent = 'Test my microphone';
+      if (best > SILENCE_PEAK) {
+        out.innerHTML = '<span style="color:var(--settled)">Microphone is working. You can start.</span>';
+      } else {
+        out.innerHTML = '<span style="color:var(--tally)">We heard nothing. Check the microphone is '
+          + 'unmuted and that this page is allowed to use it, then test again. Do not start recording '
+          + 'until this passes.</span>';
+      }
+    }
+  }, 60);
+};
+
 $('start').onclick = async () => {
   try{
     stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,
       echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
   }catch(e){ $('micnote').innerHTML='<span style="color:var(--tally)">Microphone access was denied. '
     +'Allow the microphone for this page in your browser settings, then tap Start recording again.</span>'; return; }
-  ctx = new AudioContext(); src = ctx.createMediaStreamSource(stream);
+  ctx = new AudioContext();
+  // An AudioContext created after an await is outside the user-gesture chain, so
+  // iOS Safari and some Android browsers leave it suspended. onaudioprocess then
+  // never fires, chunks stays empty, and the file is a 44-byte silent header.
+  if (ctx.state === 'suspended') { try { await ctx.resume(); } catch {} }
+  src = ctx.createMediaStreamSource(stream);
   node = ctx.createScriptProcessor(4096,1,1);
-  node.onaudioprocess = e => { if(recording) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+  node.onaudioprocess = e => {
+    const input = e.inputBuffer.getChannelData(0);
+    let peak = 0;
+    for (let i = 0; i < input.length; i++) { const v = Math.abs(input[i]); if (v > peak) peak = v; }
+    livePeak = peak;
+    meterPaint(peak);
+    if (recording) {
+      chunks.push(new Float32Array(input));
+      if (peak > takePeak) takePeak = peak;
+      // RMS per block, so sustained speech counts and a transient click does not.
+      let sumSq = 0;
+      for (let i = 0; i < input.length; i++) sumSq += input[i] * input[i];
+      totalBlocks++;
+      if (Math.sqrt(sumSq / input.length) > SILENCE_PEAK) voicedBlocks++;
+    }
+  };
   src.connect(node); node.connect(ctx.destination);
   // PRIVACY: this manifest is published publicly. Everything here must be
   // non-identifying on its own AND in combination, given only a handful of speakers.
@@ -385,7 +475,7 @@ function show(){
 }
 
 $('btn').onclick = () => {
-  if(!recording){ chunks=[]; recording=true; t0=Date.now(); $('btn').textContent='Stop';
+  if(!recording){ chunks=[]; takePeak=0; voicedBlocks=0; totalBlocks=0; recording=true; t0=Date.now(); $('btn').textContent='Stop';
     $('timer').setAttribute('data-live','1');
     timerId=setInterval(()=>$('timer').textContent=((Date.now()-t0)/1000).toFixed(1)+'s',100);
   } else {
@@ -393,7 +483,22 @@ $('btn').onclick = () => {
     const len=chunks.reduce((a,c)=>a+c.length,0), flat=new Float32Array(len);
     let o=0; for(const c of chunks){flat.set(c,o); o+=c.length;}
     const {blob,dur}=wav(flat, ctx.sampleRate);
-    results[idx]={blob,dur};
+
+    // Never accept a take we cannot hear. Whatever the device-specific cause, a
+    // silent clip is worthless to the dataset and worse than no clip, because it
+    // looks like data. Tell the speaker plainly and let them retry.
+    const voicedFraction = totalBlocks ? voicedBlocks / totalBlocks : 0;
+    if (takePeak < SILENCE_PEAK || voicedFraction < MIN_VOICED_FRACTION || dur < 0.4) {
+      $('reject').textContent = dur < 0.4
+        ? "That was too short to keep. Hold the button while you speak, then tap Stop."
+        : "We didn't pick up any sound. Check your microphone is allowed and unmuted, then try again.";
+      $('reject').classList.remove('hide');
+      $('btn').textContent='Start speaking'; $('timer').textContent='0.0s';
+      $('timer').removeAttribute('data-live');
+      return;
+    }
+    $('reject').classList.add('hide');
+    results[idx]={blob,dur,peak:takePeak,voiced:voicedFraction};
     $('play').src=URL.createObjectURL(blob); $('play').classList.remove('hide');
     $('btn').classList.add('hide'); $('again').classList.remove('hide'); $('next').classList.remove('hide');
     $('timer').textContent=dur.toFixed(1)+'s';
@@ -444,7 +549,8 @@ $('dl').onclick = async () => {
     const s=SCENARIOS[i], fn=sp+'_'+s.id+'.wav';
     files.push({name:fn,blob:r.blob});
     manifest.push(Object.assign({audio_file:fn, scenario_id:s.id, duration_s:+r.dur.toFixed(2),
-      sample_rate:16000, channels:1}, meta));
+      sample_rate:16000, channels:1, peak_amplitude:+(r.peak ?? 0).toFixed(4),
+      voiced_fraction:+(r.voiced ?? 0).toFixed(3)}, meta));
   });
   files.push({name:'manifest.json',
     blob:new Blob([JSON.stringify({speaker:meta, clips:manifest},null,2)],{type:'application/json'})});
