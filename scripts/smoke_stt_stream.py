@@ -2,7 +2,9 @@
 import asyncio, base64, json, os, sys, time, wave
 import numpy as np, soundfile as sf, httpx, websockets
 
-KEY = os.environ["API_KEY"]
+# INTRON_API_KEY is the documented name; API_KEY is accepted so an existing
+# .env from early exploration keeps working.
+KEY = os.environ.get("INTRON_API_KEY") or os.environ["API_KEY"]
 WS = "wss://infer.voice.intron.io/stt/v1/stream"
 
 def to_pcm16_16k_mono(path: str) -> bytes:
