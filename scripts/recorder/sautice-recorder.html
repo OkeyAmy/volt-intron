@@ -1,0 +1,241 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sautice — Voice Sample Recorder</title>
+<style>
+:root{--bg:#0f1214;--card:#181d21;--line:#2a3238;--fg:#e9edf0;--mut:#93a1ab;--ac:#2fb96b;--warn:#e0a33a;--dg:#d8544f}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);
+font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px}
+.wrap{max-width:640px;margin:0 auto}h1{font-size:20px;margin:0 0 4px}
+.sub{color:var(--mut);font-size:14px;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}
+input,select{width:100%;padding:11px;background:#0f1416;border:1px solid var(--line);
+border-radius:8px;color:var(--fg);font-size:16px}
+button{width:100%;padding:15px;border:0;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;margin-top:10px}
+.primary{background:var(--ac);color:#06240f}.ghost{background:#222a2f;color:var(--fg)}
+.rec{background:var(--dg);color:#fff}button:disabled{opacity:.4;cursor:not-allowed}
+.chk{display:flex;gap:10px;align-items:flex-start;margin:10px 0;font-size:14px;color:var(--fg)}
+.chk input{width:auto;margin-top:3px;flex:0 0 auto}
+.brief{font-size:18px;line-height:1.5}
+.pill{display:inline-block;background:#22303a;color:#9fd2ef;border-radius:99px;
+padding:3px 10px;font-size:12px;margin:0 6px 6px 0}
+.pill.warn{background:#3a2f16;color:#f0c579}
+.prog{height:5px;background:#222a2f;border-radius:99px;overflow:hidden;margin:6px 0 18px}
+.prog i{display:block;height:100%;background:var(--ac);transition:width .25s}
+.hint{font-size:13px;color:var(--mut);margin-top:10px}
+.timer{font-size:34px;font-variant-numeric:tabular-nums;text-align:center;margin:10px 0}
+.hide{display:none}.ok{color:var(--ac)}.warn{color:var(--warn)}
+audio{width:100%;margin-top:10px}
+ol{padding-left:20px}li{margin:6px 0}
+</style></head><body><div class="wrap">
+
+<div id="setup">
+  <h1>Sautice — Voice Sample Recorder</h1>
+  <div class="sub">You will record ~30 short clips. It takes about 20 minutes.</div>
+  <div class="card">
+    <b>How this works</b>
+    <ol>
+      <li>Each card gives you the <b>facts of a sale</b> — not a script.</li>
+      <li><b>Say it your own way</b>, exactly how you would really say it to your own staff.</li>
+      <li><b>Mix languages naturally.</b> If you would normally switch between English and
+          Yoruba / Igbo / Hausa / Pidgin mid-sentence, please do. That is the whole point.</li>
+      <li>Do not read robotically. Hesitations, "ehn", "abeg", self-corrections are all welcome.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <b>Consent</b>
+    <div class="sub" style="margin:8px 0 0">Please read carefully before recording.</div>
+    <label class="chk"><input type="checkbox" id="c1"><span>I am 18 or older and I am recording my own voice voluntarily.</span></label>
+    <label class="chk"><input type="checkbox" id="c2"><span>I agree my recordings may be used to <b>evaluate speech recognition systems</b> and published as part of an open research dataset.</span></label>
+    <label class="chk"><input type="checkbox" id="c3"><span>I understand the dataset may be hosted <b>publicly on HuggingFace</b> under an open licence, and reused by others for research.</span></label>
+    <label class="chk"><input type="checkbox" id="c4"><span>I will <b>not</b> say any real customer name, real phone number, address, or bank/account detail. All names in the cards are invented.</span></label>
+    <label class="chk"><input type="checkbox" id="c5"><span>I understand I can withdraw and have my recordings deleted by contacting the team, before or after publication.</span></label>
+
+    <label>Your initials or a nickname (this becomes a pseudonym — do not use your full name)</label>
+    <input id="sp" placeholder="e.g. TA">
+    <label>Which languages will you mix with English?</label>
+    <select id="lang">
+      <option value="pcm-en">Nigerian Pidgin + English</option>
+      <option value="yo-en">Yoruba + English</option>
+      <option value="ig-en">Igbo + English</option>
+      <option value="ha-en">Hausa + English</option>
+      <option value="en">English only</option>
+    </select>
+    <label>Device you are recording on</label>
+    <select id="dev">
+      <option>Android phone — built-in mic</option>
+      <option>iPhone — built-in mic</option>
+      <option>Laptop — built-in mic</option>
+      <option>Wired earphones / headset</option>
+      <option>Bluetooth earbuds</option>
+    </select>
+    <label>Where are you right now?</label>
+    <select id="env">
+      <option value="quiet_room">Quiet room</option>
+      <option value="office">Office / some background</option>
+      <option value="street">Outdoors / street</option>
+      <option value="market">Market / crowd</option>
+      <option value="generator">Generator or fan running</option>
+    </select>
+    <button class="primary" id="start" disabled>Start recording</button>
+    <div class="hint" id="micnote"></div>
+  </div>
+</div>
+
+<div id="rec" class="hide">
+  <div class="sub"><span id="pos"></span> · <span id="who"></span></div>
+  <div class="prog"><i id="bar" style="width:0"></i></div>
+  <div class="card">
+    <div id="tags"></div>
+    <div class="brief" id="brief"></div>
+    <div class="hint" id="note"></div>
+  </div>
+  <div class="timer" id="timer">0.0s</div>
+  <button class="rec" id="btn">● Start</button>
+  <audio id="play" controls class="hide"></audio>
+  <button class="ghost hide" id="again">Record again</button>
+  <button class="primary hide" id="next">Keep it → next</button>
+  <div class="hint">Tip: say it once, naturally. If you fumble badly, record again.</div>
+</div>
+
+<div id="done" class="hide">
+  <div class="card">
+    <h1 class="ok">All done — thank you.</h1>
+    <div class="sub" id="summary"></div>
+    <button class="primary" id="dl">Download my recordings (.zip)</button>
+    <div class="hint">Send the downloaded file back to the team. Nothing is uploaded automatically.</div>
+  </div>
+</div>
+
+</div><script>
+const SCENARIOS = [{"id": "s01", "brief": "5 bags Dangote cement to Adebayo Stores at list price, pay in 14 days.", "note": null, "tags": ["single_item"], "customer": {"in_roster": true}}, {"id": "s02", "brief": "3 bags BUA cement + 2 buckets emulsion paint to Chinedu Enterprises, pay in 7 days.", "note": null, "tags": ["multi_item"], "customer": {"in_roster": true}}, {"id": "s03", "brief": "10 lengths of 12mm iron rod to Musa Hardware, add 5,000 delivery, due end of month.", "note": null, "tags": ["shipping", "terms_phrase"], "customer": {"in_roster": true}}, {"id": "s04", "brief": "20 roofing sheets to Ngozi Ventures, 2,000 delivery, 14 days.", "note": null, "tags": ["shipping"], "customer": {"in_roster": true}}, {"id": "s05", "brief": "1 trip of sharp sand to Funmilayo Trading Co, payment on delivery.", "note": null, "tags": ["large_amount"], "customer": {"in_roster": true}}, {"id": "s06", "brief": "6 bags Dangote cement to Adebayo Ventures but at 12,800 each (not list). 14 days.", "note": null, "tags": ["price_override", "confusable_customer"], "customer": {"in_roster": true}}, {"id": "s07", "brief": "4 lengths 16mm rod to Ibrahim Sani Nig Ltd at 11,000 each. 30 days.", "note": null, "tags": ["price_override"], "customer": {"in_roster": true}}, {"id": "s08", "brief": "15 bags Lafarge cement at twelve-five each to Blessing Okafor Stores.", "note": null, "tags": ["price_override", "spoken_shorthand"], "customer": {"in_roster": true}}, {"id": "s09", "brief": "8 buckets emulsion paint to a NEW customer 'Damilola Interiors', give 5,000 discount, 7 days.", "note": null, "tags": ["discount", "out_of_roster"], "customer": {"in_roster": false}}, {"id": "s10", "brief": "10 bags Dangote cement to Yusuf Abdullahi Trading, add VAT 7.5%, 14 days.", "note": null, "tags": ["vat"], "customer": {"in_roster": true}}, {"id": "s11", "brief": "2 trips of granite to Uchenna Nwosu Ventures with 7.5% VAT and 20,000 delivery.", "note": null, "tags": ["vat", "shipping", "large_amount"], "customer": {"in_roster": true}}, {"id": "s12", "brief": "7 bags Dangote cement to a NEW customer 'Okonkwo Brothers Ltd', 14 days.", "note": null, "tags": ["out_of_roster"], "customer": {"in_roster": false}}, {"id": "s13", "brief": "12 PVC pipes to a NEW customer 'Rahman Tijani Stores', pay in 7 days.", "note": null, "tags": ["out_of_roster"], "customer": {"in_roster": false}}, {"id": "s14", "brief": "3 buckets paint to NEW customer 'Chiamaka Fabrics', 10,000 delivery.", "note": null, "tags": ["out_of_roster", "shipping"], "customer": {"in_roster": false}}, {"id": "s15", "brief": "5 units of a NEW product 'Waterproof Cement Additive' at 6,500 each to Musa & Brothers.", "note": null, "tags": ["out_of_roster_product"], "customer": {"in_roster": true}}, {"id": "s16", "brief": "9 bags cement to Adeboye Stores (NOT Adebayo Stores), 14 days.", "note": null, "tags": ["confusable_customer"], "customer": {"in_roster": true}}, {"id": "s17", "brief": "4 bags BUA cement (NOT Dangote) to Chinedu & Sons Ltd, 7 days.", "note": null, "tags": ["confusable_customer", "confusable_product"], "customer": {"in_roster": true}}, {"id": "s18", "brief": "6 lengths of 16mm rod (NOT 12mm) to Emeka Global Services, 30 days.", "note": null, "tags": ["confusable_product"], "customer": {"in_roster": true}}, {"id": "s19", "brief": "Say the quantity and price ambiguously - e.g. 'cement, twenty five' - so it is genuinely unclear whether 25 is the QUANTITY or the price. Intended: 25 bags at list price.", "note": "Correct behaviour is a clarification question, NOT a guess.", "tags": ["ambiguous_number", "MUST_ASK"], "customer": {"in_roster": true}}, {"id": "s20", "brief": "Say a price as 'two fifty' for binding wire - ambiguous between 250, 2,500 and 250,000. Intended: 10 rolls at 2,500 each.", "note": "Correct behaviour is a clarification question, NOT a guess.", "tags": ["ambiguous_number", "MUST_ASK"], "customer": {"in_roster": true}}, {"id": "s21", "brief": "Start wrong then correct yourself mid-sentence: say five bags, then say 'no, no, make am fifteen bags'. Intended final: 15 bags Dangote cement.", "note": "Final stated value wins; the retracted value must not appear.", "tags": ["self_correction"], "customer": {"in_roster": true}}, {"id": "s22", "brief": "Give quantity and price in an order that invites transposition: 'twelve thousand five hundred naira, five bags'. Intended: 5 bags at 12,500.", "note": null, "tags": ["transposition_risk"], "customer": {"in_roster": true}}, {"id": "s23", "brief": "Say the number in your local language rather than English if natural (e.g. Yoruba/Igbo/Hausa numeral). Intended: 3 buckets emulsion paint at list price.", "note": null, "tags": ["native_numeral", "MAY_ASK"], "customer": {"in_roster": true}}, {"id": "s24", "brief": "Mention a customer name that is NOT in the list at all and sounds like nothing else - 'Zainab Kachalla Global'. Intended: 2 bags cement.", "note": null, "tags": ["out_of_roster", "MUST_NOT_SNAP"], "customer": {"in_roster": false}}, {"id": "s25", "brief": "Ramble naturally: mention the customer, hesitate on the product name, then give quantity and price. Intended: Aisha Bello Enterprises, 8 bags Dangote cement at list.", "note": null, "tags": ["disfluent"], "customer": {"in_roster": true}}, {"id": "s26", "brief": "Mention two items but change your mind about the second one and drop it. Intended final: only 4 roofing sheets to a NEW customer 'Bukola Roofing Depot'.", "note": null, "tags": ["retraction", "out_of_roster"], "customer": {"in_roster": false}}, {"id": "s27", "brief": "Give the payment term as a natural phrase, not a number of days ('before month end' / 'next market day' style). Intended: 6 bags cement, end of month.", "note": null, "tags": ["terms_phrase"], "customer": {"in_roster": true}}, {"id": "s28", "brief": "A big one: 3 trips of granite plus 2 trips sharp sand to Chinedu Enterprises, 50,000 delivery, 30 days.", "note": null, "tags": ["large_amount", "multi_item"], "customer": {"in_roster": true}}, {"id": "s29", "brief": "A small one: 1 roll of binding wire to Kemi Adeyemi Stores, paid on delivery.", "note": null, "tags": ["small_amount"], "customer": {"in_roster": true}}, {"id": "s30", "brief": "Use a 'k' shorthand for the price if natural - e.g. '12.5k each'. Intended: 4 bags cement at 12,500.", "note": null, "tags": ["spoken_shorthand", "confusable_customer"], "customer": {"in_roster": true}}];
+const $ = id => document.getElementById(id);
+const chks = ['c1','c2','c3','c4','c5'].map($);
+const gate = () => $('start').disabled = !(chks.every(c=>c.checked) && $('sp').value.trim());
+chks.forEach(c=>c.onchange=gate); $('sp').oninput=gate;
+if(!navigator.mediaDevices||!window.AudioContext) $('micnote').innerHTML =
+  '<span class="warn">This browser may not support recording. Try Chrome or Safari.</span>';
+
+let ctx, stream, src, node, chunks=[], recording=false, t0=0, timerId;
+let idx=0, results=[], meta={};
+
+function wav(f32, rate){ // Float32 @rate -> 16-bit PCM WAV @16000
+  const target=16000, ratio=rate/target, n=Math.floor(f32.length/ratio);
+  const pcm=new Int16Array(n);
+  for(let i=0;i<n;i++){ // average the source window to avoid aliasing
+    const a=Math.floor(i*ratio), b=Math.min(Math.floor((i+1)*ratio),f32.length);
+    let s=0; for(let j=a;j<b;j++) s+=f32[j];
+    let v=(b>a? s/(b-a):0); v=Math.max(-1,Math.min(1,v));
+    pcm[i]= v<0 ? v*0x8000 : v*0x7fff;
+  }
+  const buf=new ArrayBuffer(44+pcm.length*2), d=new DataView(buf);
+  const str=(o,s)=>{for(let i=0;i<s.length;i++)d.setUint8(o+i,s.charCodeAt(i))};
+  str(0,'RIFF'); d.setUint32(4,36+pcm.length*2,true); str(8,'WAVEfmt ');
+  d.setUint32(16,16,true); d.setUint16(20,1,true); d.setUint16(22,1,true);
+  d.setUint32(24,target,true); d.setUint32(28,target*2,true);
+  d.setUint16(32,2,true); d.setUint16(34,16,true);
+  str(36,'data'); d.setUint32(40,pcm.length*2,true);
+  new Int16Array(buf,44).set(pcm);
+  return {blob:new Blob([buf],{type:'audio/wav'}), dur:pcm.length/target};
+}
+
+$('start').onclick = async () => {
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,
+      echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
+  }catch(e){ $('micnote').innerHTML='<span class="warn">Microphone blocked: '+e.message+'</span>'; return; }
+  ctx = new AudioContext(); src = ctx.createMediaStreamSource(stream);
+  node = ctx.createScriptProcessor(4096,1,1);
+  node.onaudioprocess = e => { if(recording) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+  src.connect(node); node.connect(ctx.destination);
+  meta = {speaker_pseudonym:$('sp').value.trim(), language_pair:$('lang').value,
+          device:$('dev').value, environment:$('env').value,
+          consent:{age18:true, research_use:true, public_hf:true, no_real_pii:true, withdrawable:true},
+          consent_text_version:1, recorded_at:new Date().toISOString(),
+          user_agent:navigator.userAgent, capture_sample_rate:ctx.sampleRate};
+  $('setup').classList.add('hide'); $('rec').classList.remove('hide');
+  $('who').textContent = meta.speaker_pseudonym+' · '+meta.language_pair+' · '+meta.environment;
+  show();
+};
+
+function show(){
+  const s=SCENARIOS[idx];
+  $('pos').textContent='Card '+(idx+1)+' of '+SCENARIOS.length;
+  $('bar').style.width=(idx/SCENARIOS.length*100)+'%';
+  $('brief').textContent=s.brief;
+  $('note').textContent=s.note||'';
+  $('tags').innerHTML = (s.tags||[]).filter(t=>!t.startsWith('MUST')&&!t.startsWith('MAY'))
+    .map(t=>'<span class="pill">'+t.replace(/_/g,' ')+'</span>').join('')
+    + (s.customer && !s.customer.in_roster ? '<span class="pill warn">new customer</span>':'');
+  $('play').classList.add('hide'); $('again').classList.add('hide'); $('next').classList.add('hide');
+  $('btn').classList.remove('hide'); $('btn').textContent='● Start'; $('timer').textContent='0.0s';
+}
+
+$('btn').onclick = () => {
+  if(!recording){ chunks=[]; recording=true; t0=Date.now(); $('btn').textContent='■ Stop';
+    timerId=setInterval(()=>$('timer').textContent=((Date.now()-t0)/1000).toFixed(1)+'s',100);
+  } else {
+    recording=false; clearInterval(timerId);
+    const len=chunks.reduce((a,c)=>a+c.length,0), flat=new Float32Array(len);
+    let o=0; for(const c of chunks){flat.set(c,o); o+=c.length;}
+    const {blob,dur}=wav(flat, ctx.sampleRate);
+    results[idx]={blob,dur};
+    $('play').src=URL.createObjectURL(blob); $('play').classList.remove('hide');
+    $('btn').classList.add('hide'); $('again').classList.remove('hide'); $('next').classList.remove('hide');
+    $('timer').textContent=dur.toFixed(1)+'s';
+  }
+};
+$('again').onclick = () => { results[idx]=null; show(); };
+$('next').onclick = () => {
+  idx++;
+  if(idx>=SCENARIOS.length){
+    $('rec').classList.add('hide'); $('done').classList.remove('hide');
+    const n=results.filter(Boolean).length, tot=results.filter(Boolean).reduce((a,r)=>a+r.dur,0);
+    $('summary').textContent=n+' clips · '+tot.toFixed(0)+' seconds of audio recorded.';
+  } else show();
+};
+
+// minimal STORE-only zip writer (no dependencies, works offline)
+function crc32(u8){let c,t=[];for(let n=0;n<256;n++){c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c}
+  let r=-1;for(let i=0;i<u8.length;i++)r=(r>>>8)^t[(r^u8[i])&255];return (r^-1)>>>0}
+async function zip(files){
+  const enc=new TextEncoder(), parts=[], central=[]; let off=0;
+  for(const f of files){
+    const name=enc.encode(f.name), data=new Uint8Array(await f.blob.arrayBuffer()), crc=crc32(data);
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0,true);
+    lh.setUint16(8,0,true); lh.setUint16(10,0,true); lh.setUint16(12,0,true);
+    lh.setUint32(14,crc,true); lh.setUint32(18,data.length,true); lh.setUint32(22,data.length,true);
+    lh.setUint16(26,name.length,true); lh.setUint16(28,0,true);
+    parts.push(new Uint8Array(lh.buffer),name,data);
+    const ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true);
+    ch.setUint32(16,crc,true); ch.setUint32(20,data.length,true); ch.setUint32(24,data.length,true);
+    ch.setUint16(28,name.length,true); ch.setUint32(42,off,true);
+    central.push(new Uint8Array(ch.buffer),name);
+    off += 30+name.length+data.length;
+  }
+  const cs=central.reduce((a,c)=>a+c.length,0);
+  const eo=new DataView(new ArrayBuffer(22));
+  eo.setUint32(0,0x06054b50,true); eo.setUint16(8,files.length,true); eo.setUint16(10,files.length,true);
+  eo.setUint32(12,cs,true); eo.setUint32(16,off,true);
+  return new Blob([...parts,...central,new Uint8Array(eo.buffer)],{type:'application/zip'});
+}
+
+$('dl').onclick = async () => {
+  $('dl').disabled=true; $('dl').textContent='Packaging…';
+  const sp=meta.speaker_pseudonym.replace(/[^A-Za-z0-9]/g,'')||'spk';
+  const files=[], manifest=[];
+  results.forEach((r,i)=>{ if(!r) return;
+    const s=SCENARIOS[i], fn=sp+'_'+s.id+'.wav';
+    files.push({name:fn,blob:r.blob});
+    manifest.push(Object.assign({audio_file:fn, scenario_id:s.id, duration_s:+r.dur.toFixed(2),
+      sample_rate:16000, channels:1}, meta));
+  });
+  files.push({name:'manifest.json',
+    blob:new Blob([JSON.stringify({speaker:meta, clips:manifest},null,2)],{type:'application/json'})});
+  const b=await zip(files), a=document.createElement('a');
+  a.href=URL.createObjectURL(b); a.download='sautibench_'+sp+'.zip'; a.click();
+  $('dl').textContent='Downloaded ✓';
+};
+</script></body></html>

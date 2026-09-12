@@ -1,0 +1,1056 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "s01",
+      "category": "core",
+      "brief": "5 bags Dangote cement to Adebayo Stores at list price, pay in 14 days.",
+      "customer": {
+        "id": "c01",
+        "name": "Adebayo Stores",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p01",
+            "description": "Dangote Cement 50kg",
+            "unit": "bag",
+            "quantity": 5,
+            "unit_price_kobo": 1250000,
+            "line_total_kobo": 6250000
+          }
+        ],
+        "subtotal_kobo": 6250000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 6250000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "single_item"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s02",
+      "category": "core",
+      "brief": "3 bags BUA cement + 2 buckets emulsion paint to Chinedu Enterprises, pay in 7 days.",
+      "customer": {
+        "id": "c04",
+        "name": "Chinedu Enterprises",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p02",
+            "description": "BUA Cement 50kg",
+            "unit": "bag",
+            "quantity": 3,
+            "unit_price_kobo": 1210000,
+            "line_total_kobo": 3630000
+          },
+          {
+            "product_id": "p06",
+            "description": "Emulsion Paint 20L",
+            "unit": "bucket",
+            "quantity": 2,
+            "unit_price_kobo": 800000,
+            "line_total_kobo": 1600000
+          }
+        ],
+        "subtotal_kobo": 5230000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 5230000,
+        "payment_terms": "net_7"
+      },
+      "tags": [
+        "multi_item"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s03",
+      "category": "core",
+      "brief": "10 lengths of 12mm iron rod to Musa Hardware, add 5,000 delivery, due end of month.",
+      "customer": {
+        "id": "c08",
+        "name": "Musa Hardware",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p04",
+            "description": "Iron Rod 12mm",
+            "unit": "length",
+            "quantity": 10,
+            "unit_price_kobo": 850000,
+            "line_total_kobo": 8500000
+          }
+        ],
+        "subtotal_kobo": 8500000,
+        "discount_kobo": 0,
+        "shipping_kobo": 500000,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 9000000,
+        "payment_terms": "end_of_month"
+      },
+      "tags": [
+        "shipping",
+        "terms_phrase"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s04",
+      "category": "core",
+      "brief": "20 roofing sheets to Ngozi Ventures, 2,000 delivery, 14 days.",
+      "customer": {
+        "id": "c10",
+        "name": "Ngozi Ventures",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p08",
+            "description": "Roofing Sheet 0.55mm",
+            "unit": "sheet",
+            "quantity": 20,
+            "unit_price_kobo": 920000,
+            "line_total_kobo": 18400000
+          }
+        ],
+        "subtotal_kobo": 18400000,
+        "discount_kobo": 0,
+        "shipping_kobo": 200000,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 18600000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "shipping"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s05",
+      "category": "core",
+      "brief": "1 trip of sharp sand to Funmilayo Trading Co, payment on delivery.",
+      "customer": {
+        "id": "c11",
+        "name": "Funmilayo Trading Co",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p09",
+            "description": "Sharp Sand",
+            "unit": "trip",
+            "quantity": 1,
+            "unit_price_kobo": 8500000,
+            "line_total_kobo": 8500000
+          }
+        ],
+        "subtotal_kobo": 8500000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 8500000,
+        "payment_terms": "on_delivery"
+      },
+      "tags": [
+        "large_amount"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s06",
+      "category": "price_override",
+      "brief": "6 bags Dangote cement to Adebayo Ventures but at 12,800 each (not list). 14 days.",
+      "customer": {
+        "id": "c02",
+        "name": "Adebayo Ventures",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p01",
+            "description": "Dangote Cement 50kg",
+            "unit": "bag",
+            "quantity": 6,
+            "unit_price_kobo": 1280000,
+            "line_total_kobo": 7680000
+          }
+        ],
+        "subtotal_kobo": 7680000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 7680000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "price_override",
+        "confusable_customer"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s07",
+      "category": "price_override",
+      "brief": "4 lengths 16mm rod to Ibrahim Sani Nig Ltd at 11,000 each. 30 days.",
+      "customer": {
+        "id": "c12",
+        "name": "Ibrahim Sani Nig Ltd",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p05",
+            "description": "Iron Rod 16mm",
+            "unit": "length",
+            "quantity": 4,
+            "unit_price_kobo": 1100000,
+            "line_total_kobo": 4400000
+          }
+        ],
+        "subtotal_kobo": 4400000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 4400000,
+        "payment_terms": "net_30"
+      },
+      "tags": [
+        "price_override"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s08",
+      "category": "price_override",
+      "brief": "15 bags Lafarge cement at twelve-five each to Blessing Okafor Stores.",
+      "customer": {
+        "id": "c13",
+        "name": "Blessing Okafor Stores",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p03",
+            "description": "Lafarge Cement 50kg",
+            "unit": "bag",
+            "quantity": 15,
+            "unit_price_kobo": 1250000,
+            "line_total_kobo": 18750000
+          }
+        ],
+        "subtotal_kobo": 18750000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 18750000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "price_override",
+        "spoken_shorthand"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s09",
+      "category": "discount",
+      "brief": "8 buckets emulsion paint to a NEW customer 'Damilola Interiors', give 5,000 discount, 7 days.",
+      "customer": {
+        "id": null,
+        "name": "Damilola Interiors",
+        "in_roster": false
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p06",
+            "description": "Emulsion Paint 20L",
+            "unit": "bucket",
+            "quantity": 8,
+            "unit_price_kobo": 800000,
+            "line_total_kobo": 6400000
+          }
+        ],
+        "subtotal_kobo": 6400000,
+        "discount_kobo": 500000,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 5900000,
+        "payment_terms": "net_7"
+      },
+      "tags": [
+        "discount",
+        "out_of_roster"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s10",
+      "category": "vat",
+      "brief": "10 bags Dangote cement to Yusuf Abdullahi Trading, add VAT 7.5%, 14 days.",
+      "customer": {
+        "id": "c14",
+        "name": "Yusuf Abdullahi Trading",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p01",
+            "description": "Dangote Cement 50kg",
+            "unit": "bag",
+            "quantity": 10,
+            "unit_price_kobo": 1250000,
+            "line_total_kobo": 12500000
+          }
+        ],
+        "subtotal_kobo": 12500000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": 7.5,
+        "tax_kobo": 937500,
+        "total_kobo": 13437500,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "vat"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s11",
+      "category": "vat",
+      "brief": "2 trips of granite to Uchenna Nwosu Ventures with 7.5% VAT and 20,000 delivery.",
+      "customer": {
+        "id": "c16",
+        "name": "Uchenna Nwosu Ventures",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p10",
+            "description": "Granite 3/4 inch",
+            "unit": "trip",
+            "quantity": 2,
+            "unit_price_kobo": 12000000,
+            "line_total_kobo": 24000000
+          }
+        ],
+        "subtotal_kobo": 24000000,
+        "discount_kobo": 0,
+        "shipping_kobo": 2000000,
+        "vat_rate": 7.5,
+        "tax_kobo": 1950000,
+        "total_kobo": 27950000,
+        "payment_terms": "net_30"
+      },
+      "tags": [
+        "vat",
+        "shipping",
+        "large_amount"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s12",
+      "category": "new_customer",
+      "brief": "7 bags Dangote cement to a NEW customer 'Okonkwo Brothers Ltd', 14 days.",
+      "customer": {
+        "id": null,
+        "name": "Okonkwo Brothers Ltd",
+        "in_roster": false
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p01",
+            "description": "Dangote Cement 50kg",
+            "unit": "bag",
+            "quantity": 7,
+            "unit_price_kobo": 1250000,
+            "line_total_kobo": 8750000
+          }
+        ],
+        "subtotal_kobo": 8750000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 8750000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "out_of_roster"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s13",
+      "category": "new_customer",
+      "brief": "12 PVC pipes to a NEW customer 'Rahman Tijani Stores', pay in 7 days.",
+      "customer": {
+        "id": null,
+        "name": "Rahman Tijani Stores",
+        "in_roster": false
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p11",
+            "description": "PVC Pipe 4 inch",
+            "unit": "length",
+            "quantity": 12,
+            "unit_price_kobo": 420000,
+            "line_total_kobo": 5040000
+          }
+        ],
+        "subtotal_kobo": 5040000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 5040000,
+        "payment_terms": "net_7"
+      },
+      "tags": [
+        "out_of_roster"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s14",
+      "category": "new_customer",
+      "brief": "3 buckets paint to NEW customer 'Chiamaka Fabrics', 10,000 delivery.",
+      "customer": {
+        "id": null,
+        "name": "Chiamaka Fabrics",
+        "in_roster": false
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p06",
+            "description": "Emulsion Paint 20L",
+            "unit": "bucket",
+            "quantity": 3,
+            "unit_price_kobo": 800000,
+            "line_total_kobo": 2400000
+          }
+        ],
+        "subtotal_kobo": 2400000,
+        "discount_kobo": 0,
+        "shipping_kobo": 1000000,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 3400000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "out_of_roster",
+        "shipping"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s15",
+      "category": "new_product",
+      "brief": "5 units of a NEW product 'Waterproof Cement Additive' at 6,500 each to Musa & Brothers.",
+      "customer": {
+        "id": "c09",
+        "name": "Musa & Brothers",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": null,
+            "description": "Waterproof Cement Additive",
+            "unit": "unit",
+            "quantity": 5,
+            "unit_price_kobo": 650000,
+            "line_total_kobo": 3250000
+          }
+        ],
+        "subtotal_kobo": 3250000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 3250000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "out_of_roster_product"
+      ],
+      "new_product": "Waterproof Cement Additive",
+      "note": null
+    },
+    {
+      "id": "s16",
+      "category": "confusable",
+      "brief": "9 bags cement to Adeboye Stores (NOT Adebayo Stores), 14 days.",
+      "customer": {
+        "id": "c03",
+        "name": "Adeboye Stores",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p01",
+            "description": "Dangote Cement 50kg",
+            "unit": "bag",
+            "quantity": 9,
+            "unit_price_kobo": 1250000,
+            "line_total_kobo": 11250000
+          }
+        ],
+        "subtotal_kobo": 11250000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 11250000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "confusable_customer"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s17",
+      "category": "confusable",
+      "brief": "4 bags BUA cement (NOT Dangote) to Chinedu & Sons Ltd, 7 days.",
+      "customer": {
+        "id": "c05",
+        "name": "Chinedu & Sons Ltd",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p02",
+            "description": "BUA Cement 50kg",
+            "unit": "bag",
+            "quantity": 4,
+            "unit_price_kobo": 1210000,
+            "line_total_kobo": 4840000
+          }
+        ],
+        "subtotal_kobo": 4840000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 4840000,
+        "payment_terms": "net_7"
+      },
+      "tags": [
+        "confusable_customer",
+        "confusable_product"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s18",
+      "category": "confusable",
+      "brief": "6 lengths of 16mm rod (NOT 12mm) to Emeka Global Services, 30 days.",
+      "customer": {
+        "id": "c07",
+        "name": "Emeka Global Services",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p05",
+            "description": "Iron Rod 16mm",
+            "unit": "length",
+            "quantity": 6,
+            "unit_price_kobo": 1150000,
+            "line_total_kobo": 6900000
+          }
+        ],
+        "subtotal_kobo": 6900000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 6900000,
+        "payment_terms": "net_30"
+      },
+      "tags": [
+        "confusable_product"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s19",
+      "category": "adversarial",
+      "brief": "Say the quantity and price ambiguously - e.g. 'cement, twenty five' - so it is genuinely unclear whether 25 is the QUANTITY or the price. Intended: 25 bags at list price.",
+      "customer": {
+        "id": "c01",
+        "name": "Adebayo Stores",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p01",
+            "description": "Dangote Cement 50kg",
+            "unit": "bag",
+            "quantity": 25,
+            "unit_price_kobo": 1250000,
+            "line_total_kobo": 31250000
+          }
+        ],
+        "subtotal_kobo": 31250000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 31250000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "ambiguous_number",
+        "MUST_ASK"
+      ],
+      "new_product": null,
+      "note": "Correct behaviour is a clarification question, NOT a guess."
+    },
+    {
+      "id": "s20",
+      "category": "adversarial",
+      "brief": "Say a price as 'two fifty' for binding wire - ambiguous between 250, 2,500 and 250,000. Intended: 10 rolls at 2,500 each.",
+      "customer": {
+        "id": "c06",
+        "name": "Emeka Global Concept",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p12",
+            "description": "Binding Wire",
+            "unit": "roll",
+            "quantity": 10,
+            "unit_price_kobo": 250000,
+            "line_total_kobo": 2500000
+          }
+        ],
+        "subtotal_kobo": 2500000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 2500000,
+        "payment_terms": "net_7"
+      },
+      "tags": [
+        "ambiguous_number",
+        "MUST_ASK"
+      ],
+      "new_product": null,
+      "note": "Correct behaviour is a clarification question, NOT a guess."
+    },
+    {
+      "id": "s21",
+      "category": "adversarial",
+      "brief": "Start wrong then correct yourself mid-sentence: say five bags, then say 'no, no, make am fifteen bags'. Intended final: 15 bags Dangote cement.",
+      "customer": {
+        "id": "c04",
+        "name": "Chinedu Enterprises",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p01",
+            "description": "Dangote Cement 50kg",
+            "unit": "bag",
+            "quantity": 15,
+            "unit_price_kobo": 1250000,
+            "line_total_kobo": 18750000
+          }
+        ],
+        "subtotal_kobo": 18750000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 18750000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "self_correction"
+      ],
+      "new_product": null,
+      "note": "Final stated value wins; the retracted value must not appear."
+    },
+    {
+      "id": "s22",
+      "category": "adversarial",
+      "brief": "Give quantity and price in an order that invites transposition: 'twelve thousand five hundred naira, five bags'. Intended: 5 bags at 12,500.",
+      "customer": {
+        "id": "c15",
+        "name": "Tunde Bakare Ltd",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p01",
+            "description": "Dangote Cement 50kg",
+            "unit": "bag",
+            "quantity": 5,
+            "unit_price_kobo": 1250000,
+            "line_total_kobo": 6250000
+          }
+        ],
+        "subtotal_kobo": 6250000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 6250000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "transposition_risk"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s23",
+      "category": "adversarial",
+      "brief": "Say the number in your local language rather than English if natural (e.g. Yoruba/Igbo/Hausa numeral). Intended: 3 buckets emulsion paint at list price.",
+      "customer": {
+        "id": "c19",
+        "name": "Kemi Adeyemi Stores",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p06",
+            "description": "Emulsion Paint 20L",
+            "unit": "bucket",
+            "quantity": 3,
+            "unit_price_kobo": 800000,
+            "line_total_kobo": 2400000
+          }
+        ],
+        "subtotal_kobo": 2400000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 2400000,
+        "payment_terms": "net_7"
+      },
+      "tags": [
+        "native_numeral",
+        "MAY_ASK"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s24",
+      "category": "adversarial",
+      "brief": "Mention a customer name that is NOT in the list at all and sounds like nothing else - 'Zainab Kachalla Global'. Intended: 2 bags cement.",
+      "customer": {
+        "id": null,
+        "name": "Zainab Kachalla Global",
+        "in_roster": false
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p01",
+            "description": "Dangote Cement 50kg",
+            "unit": "bag",
+            "quantity": 2,
+            "unit_price_kobo": 1250000,
+            "line_total_kobo": 2500000
+          }
+        ],
+        "subtotal_kobo": 2500000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 2500000,
+        "payment_terms": "net_7"
+      },
+      "tags": [
+        "out_of_roster",
+        "MUST_NOT_SNAP"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s25",
+      "category": "messy",
+      "brief": "Ramble naturally: mention the customer, hesitate on the product name, then give quantity and price. Intended: Aisha Bello Enterprises, 8 bags Dangote cement at list.",
+      "customer": {
+        "id": "c17",
+        "name": "Aisha Bello Enterprises",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p01",
+            "description": "Dangote Cement 50kg",
+            "unit": "bag",
+            "quantity": 8,
+            "unit_price_kobo": 1250000,
+            "line_total_kobo": 10000000
+          }
+        ],
+        "subtotal_kobo": 10000000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 10000000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "disfluent"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s26",
+      "category": "messy",
+      "brief": "Mention two items but change your mind about the second one and drop it. Intended final: only 4 roofing sheets to a NEW customer 'Bukola Roofing Depot'.",
+      "customer": {
+        "id": null,
+        "name": "Bukola Roofing Depot",
+        "in_roster": false
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p08",
+            "description": "Roofing Sheet 0.55mm",
+            "unit": "sheet",
+            "quantity": 4,
+            "unit_price_kobo": 920000,
+            "line_total_kobo": 3680000
+          }
+        ],
+        "subtotal_kobo": 3680000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 3680000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "retraction",
+        "out_of_roster"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s27",
+      "category": "messy",
+      "brief": "Give the payment term as a natural phrase, not a number of days ('before month end' / 'next market day' style). Intended: 6 bags cement, end of month.",
+      "customer": {
+        "id": "c20",
+        "name": "Hassan Garba Trading",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p01",
+            "description": "Dangote Cement 50kg",
+            "unit": "bag",
+            "quantity": 6,
+            "unit_price_kobo": 1250000,
+            "line_total_kobo": 7500000
+          }
+        ],
+        "subtotal_kobo": 7500000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 7500000,
+        "payment_terms": "end_of_month"
+      },
+      "tags": [
+        "terms_phrase"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s28",
+      "category": "amounts",
+      "brief": "A big one: 3 trips of granite plus 2 trips sharp sand to Chinedu Enterprises, 50,000 delivery, 30 days.",
+      "customer": {
+        "id": "c04",
+        "name": "Chinedu Enterprises",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p10",
+            "description": "Granite 3/4 inch",
+            "unit": "trip",
+            "quantity": 3,
+            "unit_price_kobo": 12000000,
+            "line_total_kobo": 36000000
+          },
+          {
+            "product_id": "p09",
+            "description": "Sharp Sand",
+            "unit": "trip",
+            "quantity": 2,
+            "unit_price_kobo": 8500000,
+            "line_total_kobo": 17000000
+          }
+        ],
+        "subtotal_kobo": 53000000,
+        "discount_kobo": 0,
+        "shipping_kobo": 5000000,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 58000000,
+        "payment_terms": "net_30"
+      },
+      "tags": [
+        "large_amount",
+        "multi_item"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s29",
+      "category": "amounts",
+      "brief": "A small one: 1 roll of binding wire to Kemi Adeyemi Stores, paid on delivery.",
+      "customer": {
+        "id": "c19",
+        "name": "Kemi Adeyemi Stores",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p12",
+            "description": "Binding Wire",
+            "unit": "roll",
+            "quantity": 1,
+            "unit_price_kobo": 180000,
+            "line_total_kobo": 180000
+          }
+        ],
+        "subtotal_kobo": 180000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 180000,
+        "payment_terms": "on_delivery"
+      },
+      "tags": [
+        "small_amount"
+      ],
+      "new_product": null,
+      "note": null
+    },
+    {
+      "id": "s30",
+      "category": "amounts",
+      "brief": "Use a 'k' shorthand for the price if natural - e.g. '12.5k each'. Intended: 4 bags cement at 12,500.",
+      "customer": {
+        "id": "c02",
+        "name": "Adebayo Ventures",
+        "in_roster": true
+      },
+      "expected": {
+        "items": [
+          {
+            "product_id": "p01",
+            "description": "Dangote Cement 50kg",
+            "unit": "bag",
+            "quantity": 4,
+            "unit_price_kobo": 1250000,
+            "line_total_kobo": 5000000
+          }
+        ],
+        "subtotal_kobo": 5000000,
+        "discount_kobo": 0,
+        "shipping_kobo": 0,
+        "vat_rate": null,
+        "tax_kobo": 0,
+        "total_kobo": 5000000,
+        "payment_terms": "net_14"
+      },
+      "tags": [
+        "spoken_shorthand",
+        "confusable_customer"
+      ],
+      "new_product": null,
+      "note": null
+    }
+  ]
+}
