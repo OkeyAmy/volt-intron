@@ -1,0 +1,168 @@
+/* ============================================================================
+   Sautice design tokens — SINGLE SOURCE OF TRUTH.
+   Consumed by: apps/web (imported) and scripts/recorder (inlined at build time).
+   Never restate a value from this file anywhere else.
+   ========================================================================= */
+
+:root {
+  /* --- colour: ink on paper, from the carbonless invoice book -------------- */
+  --ink:        #16233F;   /* ballpoint blue-black: text, wordmark, settled rules */
+  --ink-soft:   #5A6274;   /* secondary text */
+  --ink-faint:  #8A90A0;   /* tertiary text, placeholders */
+  --paper:      #F7F6F2;   /* page ground */
+  --leaf:       #FFFFFF;   /* the sheet you write on */
+  --carbon:     #D9D5CA;   /* rules, borders, dividers */
+  --carbon-dim: #EAE7DF;   /* hairlines, inset fills */
+
+  /* accents — each means exactly one thing */
+  --settled:    #1F7A5C;   /* confirmed */
+  --settled-bg: #E6F2EC;
+  --query:      #A9761A;   /* needs checking */
+  --query-bg:   #FBF1DE;
+  --tally:      #C8102E;   /* the total rule. also destructive/error. nothing else. */
+  --tally-bg:   #FCE9EC;
+
+  --focus:      #16233F;
+
+  /* --- type --------------------------------------------------------------- */
+  --font: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --t-xs: 0.75rem;    /* 12 */
+  --t-sm: 0.875rem;   /* 14 */
+  --t-md: 1rem;       /* 16 — body */
+  --t-lg: 1.25rem;    /* 20 */
+  --t-xl: 1.5625rem;  /* 25 */
+  --t-2xl: 1.9375rem; /* 31 */
+  --t-3xl: 2.4375rem; /* 39 */
+  --lh-body: 1.55;
+  --lh-tight: 1.2;
+
+  /* --- space (4px base) ---------------------------------------------------- */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+
+  /* --- form ---------------------------------------------------------------- */
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --measure: 34rem;              /* phone-shaped even on desktop */
+  --rule-w: 2px;                 /* the ruled line weight */
+  --shadow: 0 1px 2px rgba(22,35,63,.06), 0 8px 24px -12px rgba(22,35,63,.18);
+}
+
+/* --- dark: authored, not derived ------------------------------------------ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:#EEF1F6; --ink-soft:#A7AFC0; --ink-faint:#727B8E;
+    --paper:#0E1526; --leaf:#161F33; --carbon:#2C3750; --carbon-dim:#1E2840;
+    --settled:#43B189; --settled-bg:#16302A;
+    --query:#D6A03F;   --query-bg:#332813;
+    --tally:#FF5A6E;   --tally-bg:#3A1720;
+    --focus:#8FB4FF;
+    --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"] {
+  --ink:#EEF1F6; --ink-soft:#A7AFC0; --ink-faint:#727B8E;
+  --paper:#0E1526; --leaf:#161F33; --carbon:#2C3750; --carbon-dim:#1E2840;
+  --settled:#43B189; --settled-bg:#16302A;
+  --query:#D6A03F;   --query-bg:#332813;
+  --tally:#FF5A6E;   --tally-bg:#3A1720;
+  --focus:#8FB4FF;
+  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+/* ============================================================================
+   Base
+   ========================================================================= */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--font); font-size: var(--t-md); line-height: var(--lh-body);
+  font-synthesis-weight: none;
+}
+h1,h2,h3 { line-height: var(--lh-tight); margin: 0; font-weight: 620; letter-spacing: -0.02em; }
+h1 { font-size: var(--t-xl); }
+h2 { font-size: var(--t-lg); }
+p { margin: 0 0 var(--s3); max-width: 68ch; }
+
+/* Money and any figure that must align down a column. */
+.num { font-variant-numeric: tabular-nums; letter-spacing: 0; }
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-sm);
+}
+
+/* ============================================================================
+   The rule system — structure carrying meaning, not decoration.
+   A field's underline states how much the system trusts what is above it.
+   ========================================================================= */
+.rule { height: var(--rule-w); border: 0; margin: 0; background: var(--carbon); }
+.rule--settled { background: var(--ink); }                        /* confirmed */
+.rule--check {                                                     /* heard, uncertain */
+  background: repeating-linear-gradient(to right,
+    var(--query) 0 6px, transparent 6px 11px);
+}
+.rule--asking {                                                    /* being asked about now */
+  background: repeating-linear-gradient(to right,
+    var(--ink-faint) 0 3px, transparent 3px 9px);
+}
+.rule--total { height: 3px; background: var(--tally); }            /* money below */
+
+/* ============================================================================
+   Surfaces
+   ========================================================================= */
+.sheet {
+  background: var(--leaf); border: 1px solid var(--carbon-dim);
+  border-radius: var(--r-lg); padding: var(--s5); box-shadow: var(--shadow);
+}
+.wrap { max-width: var(--measure); margin-inline: auto; padding-inline: var(--s4); }
+@media (max-width: 30rem) {
+  .sheet { border-radius: 0; border-inline: 0; margin-inline: calc(var(--s4) * -1); }
+}
+
+/* ============================================================================
+   Controls
+   ========================================================================= */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  width: 100%; min-height: 52px; padding: var(--s3) var(--s5);
+  font: inherit; font-weight: 560; border-radius: var(--r-md); border: 1px solid transparent;
+  cursor: pointer; background: var(--ink); color: var(--leaf);
+  transition: background .12s ease, border-color .12s ease;
+}
+.btn:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 86%, var(--paper)); }
+.btn:disabled { opacity: .38; cursor: not-allowed; }
+.btn--quiet { background: transparent; color: var(--ink); border-color: var(--carbon); }
+.btn--quiet:hover:not(:disabled) { background: var(--carbon-dim); }
+.btn--record { background: var(--tally); color: #fff; }
+.btn--record:hover:not(:disabled) { background: color-mix(in srgb, var(--tally) 88%, #000); }
+
+.field { display: block; margin-top: var(--s4); }
+.field > .label { display: block; font-size: var(--t-sm); color: var(--ink-soft); margin-bottom: var(--s1); }
+.input, select.input {
+  width: 100%; min-height: 48px; padding: var(--s3); font: inherit; color: var(--ink);
+  background: var(--leaf); border: 1px solid var(--carbon); border-radius: var(--r-sm);
+}
+.input::placeholder { color: var(--ink-faint); }
+
+.check { display: flex; gap: var(--s3); align-items: flex-start; padding: var(--s2) 0; cursor: pointer; }
+.check input { flex: 0 0 auto; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--ink); }
+.check span { font-size: var(--t-sm); }
+
+.note { font-size: var(--t-sm); color: var(--ink-soft); }
+.hint { font-size: var(--t-xs); color: var(--ink-faint); }
+
+/* status chips — a word plus a colour, never colour alone */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px;
+  border-radius: 99px; font-size: var(--t-xs); font-weight: 560;
+  background: var(--carbon-dim); color: var(--ink-soft);
+}
+.chip--settled { background: var(--settled-bg); color: var(--settled); }
+.chip--check   { background: var(--query-bg);   color: var(--query); }
+.chip--tally   { background: var(--tally-bg);   color: var(--tally); }
+
+.meter { height: 4px; background: var(--carbon-dim); border-radius: 99px; overflow: hidden; }
+.meter > i { display: block; height: 100%; background: var(--ink); transition: width .3s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

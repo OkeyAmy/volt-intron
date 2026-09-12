@@ -1,109 +1,131 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>Sautice — Voice Sample Recorder</title>
+<link rel="icon" href="data:image/svg+xml,__FAVICON__">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;560;620;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0f1214;--card:#181d21;--line:#2a3238;--fg:#e9edf0;--mut:#93a1ab;--ac:#2fb96b;--warn:#e0a33a;--dg:#d8544f}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);
-font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:16px}
-.wrap{max-width:640px;margin:0 auto}h1{font-size:20px;margin:0 0 4px}
-.sub{color:var(--mut);font-size:14px;margin-bottom:20px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
-label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}
-input,select{width:100%;padding:11px;background:#0f1416;border:1px solid var(--line);
-border-radius:8px;color:var(--fg);font-size:16px}
-button{width:100%;padding:15px;border:0;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;margin-top:10px}
-.primary{background:var(--ac);color:#06240f}.ghost{background:#222a2f;color:var(--fg)}
-.rec{background:var(--dg);color:#fff}button:disabled{opacity:.4;cursor:not-allowed}
-.chk{display:flex;gap:10px;align-items:flex-start;margin:10px 0;font-size:14px;color:var(--fg)}
-.chk input{width:auto;margin-top:3px;flex:0 0 auto}
-.brief{font-size:18px;line-height:1.5}
-.pill{display:inline-block;background:#22303a;color:#9fd2ef;border-radius:99px;
-padding:3px 10px;font-size:12px;margin:0 6px 6px 0}
-.pill.warn{background:#3a2f16;color:#f0c579}
-.prog{height:5px;background:#222a2f;border-radius:99px;overflow:hidden;margin:6px 0 18px}
-.prog i{display:block;height:100%;background:var(--ac);transition:width .25s}
-.hint{font-size:13px;color:var(--mut);margin-top:10px}
-.timer{font-size:34px;font-variant-numeric:tabular-nums;text-align:center;margin:10px 0}
-.hide{display:none}.ok{color:var(--ac)}.warn{color:var(--warn)}
-audio{width:100%;margin-top:10px}
-ol{padding-left:20px}li{margin:6px 0}
+__TOKENS__
+
+/* ---- page-specific ---- */
+body { padding-block: var(--s5) var(--s8); }
+.masthead { display:flex; align-items:center; justify-content:space-between; gap:var(--s4);
+            margin-bottom:var(--s5); }
+.masthead svg { height:26px; width:auto; color:var(--ink); display:block; }
+.stack > * + * { margin-top: var(--s4); }
+.steps { margin:var(--s3) 0 0; padding-left:1.15rem; }
+.steps li { margin:var(--s2) 0; }
+.hide { display:none !important; }
+
+/* recording screen */
+.brief { font-size: var(--t-lg); line-height:1.45; margin:var(--s3) 0 0; max-width:none; }
+.tagrow { display:flex; flex-wrap:wrap; gap:6px; }
+.tagrow:empty { display:none; }
+.progress-row { display:flex; justify-content:space-between; align-items:baseline;
+                font-size:var(--t-xs); color:var(--ink-faint); margin-bottom:var(--s2); }
+.timer { font-size: var(--t-3xl); font-weight:620; text-align:center;
+         margin: var(--s5) 0 var(--s4); font-variant-numeric: tabular-nums; letter-spacing:-.02em; }
+.timer[data-live="1"] { color: var(--tally); }
+.idcard { text-align:center; padding:var(--s4); background:var(--carbon-dim);
+          border-radius:var(--r-md); font-size:var(--t-xl); font-weight:620;
+          letter-spacing:.06em; font-variant-numeric:tabular-nums; }
+audio { width:100%; margin-top:var(--s4); }
 </style></head><body><div class="wrap">
 
-<div id="setup">
-  <h1>Sautice — Voice Sample Recorder</h1>
-  <div class="sub">You will record ~30 short clips. It takes about 20 minutes.</div>
-  <div class="card">
-    <b>How this works</b>
-    <ol>
+<div class="masthead">__LOGO__<span class="hint">Voice sample recorder</span></div>
+
+<div id="setup" class="stack">
+  <div class="sheet">
+    <h1>Help us test how speech AI hears Nigerian business talk</h1>
+    <p class="note" style="margin-top:var(--s2)">About 20 minutes, 30 short clips. Your name is never collected.</p>
+    <hr class="rule rule--settled" style="margin:var(--s4) 0">
+    <h2>How this works</h2>
+    <ol class="steps">
       <li>Each card gives you the <b>facts of a sale</b> — not a script.</li>
-      <li><b>Say it your own way</b>, exactly how you would really say it to your own staff.</li>
+      <li><b>Say it your own way</b>, exactly how you would say it to your own staff.</li>
       <li><b>Mix languages naturally.</b> If you would normally switch between English and
-          Yoruba / Igbo / Hausa / Pidgin mid-sentence, please do. That is the whole point.</li>
-      <li>Do not read robotically. Hesitations, "ehn", "abeg", self-corrections are all welcome.</li>
+          Yoruba, Igbo, Hausa or Pidgin mid-sentence, do it. That is the whole point.</li>
+      <li>Don't read it robotically. Hesitations, "ehn", "abeg" and corrections are all welcome.</li>
     </ol>
   </div>
-  <div class="card">
-    <b>Consent</b>
-    <div class="sub" style="margin:8px 0 0">Please read carefully before recording.</div>
-    <label class="chk"><input type="checkbox" id="c1"><span>I am 18 or older and I am recording my own voice voluntarily.</span></label>
-    <label class="chk"><input type="checkbox" id="c2"><span>I agree my recordings may be used to <b>evaluate speech recognition systems</b> and published as part of an open research dataset.</span></label>
-    <label class="chk"><input type="checkbox" id="c3"><span>I understand the dataset may be hosted <b>publicly on HuggingFace</b> under an open licence, and reused by others for research.</span></label>
-    <label class="chk"><input type="checkbox" id="c4"><span>I will <b>not</b> say any real customer name, real phone number, address, or bank/account detail. All names in the cards are invented.</span></label>
-    <label class="chk"><input type="checkbox" id="c5"><span>I understand I can withdraw and have my recordings deleted by contacting the team, before or after publication.</span></label>
 
-    <label>Your initials or a nickname (this becomes a pseudonym — do not use your full name)</label>
-    <input id="sp" placeholder="e.g. TA">
-    <label>Which languages will you mix with English?</label>
-    <select id="lang">
-      <option value="pcm-en">Nigerian Pidgin + English</option>
-      <option value="yo-en">Yoruba + English</option>
-      <option value="ig-en">Igbo + English</option>
-      <option value="ha-en">Hausa + English</option>
-      <option value="en">English only</option>
-    </select>
-    <label>Device you are recording on</label>
-    <select id="dev">
-      <option>Android phone — built-in mic</option>
-      <option>iPhone — built-in mic</option>
-      <option>Laptop — built-in mic</option>
-      <option>Wired earphones / headset</option>
-      <option>Bluetooth earbuds</option>
-    </select>
-    <label>Where are you right now?</label>
-    <select id="env">
-      <option value="quiet_room">Quiet room</option>
-      <option value="office">Office / some background</option>
-      <option value="street">Outdoors / street</option>
-      <option value="market">Market / crowd</option>
-      <option value="generator">Generator or fan running</option>
-    </select>
-    <button class="primary" id="start" disabled>Start recording</button>
-    <div class="hint" id="micnote"></div>
+  <div class="sheet">
+    <h2>Before you start</h2>
+    <p class="note" style="margin-top:var(--s2)">All five need your agreement.</p>
+    <label class="check"><input type="checkbox" id="c1"><span>I am 18 or older and I am recording my own voice by choice.</span></label>
+    <label class="check"><input type="checkbox" id="c2"><span>My recordings can be used to <b>test speech recognition systems</b> and included in an open research dataset.</span></label>
+    <label class="check"><input type="checkbox" id="c3"><span>The dataset may be published <b>publicly on HuggingFace</b> under an open licence and reused by other researchers.</span></label>
+    <label class="check"><input type="checkbox" id="c4"><span>I will not say any real customer name, phone number, address or account detail. Every name on the cards is invented.</span></label>
+    <label class="check"><input type="checkbox" id="c5"><span>I can ask for my recordings to be deleted at any time, before or after publication.</span></label>
+
+    <div class="field">
+      <span class="label">Your speaker ID</span>
+      <div class="idcard" id="sp"></div>
+      <p class="hint" style="margin-top:var(--s2)">Assigned at random. This is the only identifier
+      published with your recordings — your name is never collected or stored. We know the file is
+      yours because you send it to us yourself.</p>
+    </div>
+
+    <label class="field"><span class="label">Which language will you mix with English?</span>
+      <select class="input" id="lang">
+        <option value="pcm-en">Nigerian Pidgin</option>
+        <option value="yo-en">Yoruba</option>
+        <option value="ig-en">Igbo</option>
+        <option value="ha-en">Hausa</option>
+        <option value="en">English only</option>
+      </select></label>
+    <label class="field"><span class="label">What are you recording on?</span>
+      <select class="input" id="dev">
+        <option>Android phone — built-in mic</option>
+        <option>iPhone — built-in mic</option>
+        <option>Laptop — built-in mic</option>
+        <option>Wired earphones or headset</option>
+        <option>Bluetooth earbuds</option>
+      </select></label>
+    <label class="field"><span class="label">Where are you right now?</span>
+      <select class="input" id="env">
+        <option value="quiet_room">Quiet room</option>
+        <option value="office">Office, some background noise</option>
+        <option value="street">Outdoors or street</option>
+        <option value="market">Market or crowd</option>
+        <option value="generator">Generator or fan running</option>
+      </select></label>
+
+    <button class="btn" id="start" style="margin-top:var(--s5)" disabled>Start recording</button>
+    <p class="hint" id="micnote" style="margin-top:var(--s3)"></p>
   </div>
 </div>
 
-<div id="rec" class="hide">
-  <div class="sub"><span id="pos"></span> · <span id="who"></span></div>
-  <div class="prog"><i id="bar" style="width:0"></i></div>
-  <div class="card">
-    <div id="tags"></div>
-    <div class="brief" id="brief"></div>
-    <div class="hint" id="note"></div>
+<div id="rec" class="hide stack">
+  <div>
+    <div class="progress-row"><span id="pos"></span><span id="who"></span></div>
+    <div class="meter"><i id="bar" style="width:0"></i></div>
   </div>
-  <div class="timer" id="timer">0.0s</div>
-  <button class="rec" id="btn">● Start</button>
-  <audio id="play" controls class="hide"></audio>
-  <button class="ghost hide" id="again">Record again</button>
-  <button class="primary hide" id="next">Keep it → next</button>
-  <div class="hint">Tip: say it once, naturally. If you fumble badly, record again.</div>
+  <div class="sheet">
+    <div class="tagrow" id="tags"></div>
+    <p class="brief" id="brief"></p>
+    <p class="note" id="note" style="margin-top:var(--s3)"></p>
+  </div>
+  <div>
+    <div class="timer" id="timer">0.0s</div>
+    <button class="btn btn--record" id="btn">Start speaking</button>
+    <audio id="play" controls class="hide"></audio>
+    <button class="btn btn--quiet hide" id="again" style="margin-top:var(--s3)">Record again</button>
+    <button class="btn hide" id="next" style="margin-top:var(--s3)">Keep it, next card</button>
+    <p class="hint" style="margin-top:var(--s3)">Say it once, naturally. If you fumble badly, record again.</p>
+  </div>
 </div>
 
 <div id="done" class="hide">
-  <div class="card">
-    <h1 class="ok">All done — thank you.</h1>
-    <div class="sub" id="summary"></div>
-    <button class="primary" id="dl">Download my recordings (.zip)</button>
-    <div class="hint">Send the downloaded file back to the team. Nothing is uploaded automatically.</div>
+  <div class="sheet">
+    <h1>That's everything. Thank you.</h1>
+    <p class="note" id="summary" style="margin-top:var(--s2)"></p>
+    <hr class="rule rule--total" style="margin:var(--s5) 0 var(--s4)">
+    <button class="btn" id="dl">Download my recordings</button>
+    <p class="hint" style="margin-top:var(--s3)">Send the downloaded file back to the team.
+    Nothing was uploaded — the recordings never left your device.</p>
   </div>
 </div>
 
@@ -111,10 +133,16 @@ ol{padding-left:20px}li{margin:6px 0}
 const SCENARIOS = __SCENARIOS__;
 const $ = id => document.getElementById(id);
 const chks = ['c1','c2','c3','c4','c5'].map($);
-const gate = () => $('start').disabled = !(chks.every(c=>c.checked) && $('sp').value.trim());
-chks.forEach(c=>c.onchange=gate); $('sp').oninput=gate;
+// PRIVACY: the speaker ID is randomly assigned, never derived from anything the
+// speaker types. There is therefore no path by which a real name can reach the
+// published manifest. The person <-> ID mapping stays out-of-band with the team.
+const SPEAKER_ID = 'SPK-' + Array.from(crypto.getRandomValues(new Uint8Array(2)))
+  .map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
+$('sp').textContent = SPEAKER_ID;
+const gate = () => $('start').disabled = !chks.every(c=>c.checked);
+chks.forEach(c=>c.onchange=gate); gate();
 if(!navigator.mediaDevices||!window.AudioContext) $('micnote').innerHTML =
-  '<span class="warn">This browser may not support recording. Try Chrome or Safari.</span>';
+  '<span style="color:var(--tally)">This browser can\'t record audio. Open this page in Chrome or Safari.</span>';
 
 let ctx, stream, src, node, chunks=[], recording=false, t0=0, timerId;
 let idx=0, results=[], meta={};
@@ -143,18 +171,27 @@ $('start').onclick = async () => {
   try{
     stream = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,
       echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
-  }catch(e){ $('micnote').innerHTML='<span class="warn">Microphone blocked: '+e.message+'</span>'; return; }
+  }catch(e){ $('micnote').innerHTML='<span style="color:var(--tally)">Microphone access was denied. '
+    +'Allow the microphone for this page in your browser settings, then tap Start recording again.</span>'; return; }
   ctx = new AudioContext(); src = ctx.createMediaStreamSource(stream);
   node = ctx.createScriptProcessor(4096,1,1);
   node.onaudioprocess = e => { if(recording) chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
   src.connect(node); node.connect(ctx.destination);
-  meta = {speaker_pseudonym:$('sp').value.trim(), language_pair:$('lang').value,
+  // PRIVACY: this manifest is published publicly. Everything here must be
+  // non-identifying on its own AND in combination, given only a handful of speakers.
+  // Raw navigator.userAgent is a fingerprint (device model, OS build) -> bucketed.
+  // Timestamps are coarsened to the day -> no cross-record correlation by time.
+  const ua = navigator.userAgent;
+  const pick = (re, d) => (re.exec(ua) || [0, d])[1];
+  meta = {speaker_id:SPEAKER_ID, language_pair:$('lang').value,
           device:$('dev').value, environment:$('env').value,
           consent:{age18:true, research_use:true, public_hf:true, no_real_pii:true, withdrawable:true},
-          consent_text_version:1, recorded_at:new Date().toISOString(),
-          user_agent:navigator.userAgent, capture_sample_rate:ctx.sampleRate};
+          consent_text_version:1, recorded_date:new Date().toISOString().slice(0,10),
+          browser_family:pick(/(Firefox|Edg|Chrome|Safari)/, 'other'),
+          os_family:pick(/(Android|iPhone|iPad|Windows|Mac|Linux)/, 'other'),
+          capture_sample_rate:ctx.sampleRate};
   $('setup').classList.add('hide'); $('rec').classList.remove('hide');
-  $('who').textContent = meta.speaker_pseudonym+' · '+meta.language_pair+' · '+meta.environment;
+  $('who').textContent = meta.speaker_id;
   show();
 };
 
@@ -163,19 +200,21 @@ function show(){
   $('pos').textContent='Card '+(idx+1)+' of '+SCENARIOS.length;
   $('bar').style.width=(idx/SCENARIOS.length*100)+'%';
   $('brief').textContent=s.brief;
-  $('note').textContent=s.note||'';
-  $('tags').innerHTML = (s.tags||[]).filter(t=>!t.startsWith('MUST')&&!t.startsWith('MAY'))
-    .map(t=>'<span class="pill">'+t.replace(/_/g,' ')+'</span>').join('')
-    + (s.customer && !s.customer.in_roster ? '<span class="pill warn">new customer</span>':'');
+  $('note').textContent=s.speaker_hint||'';
+  $('tags').innerHTML = (s.tags||[]).filter(t=>!t.startsWith('MUST')&&!t.startsWith('MAY')&&t!=='out_of_roster')
+    .map(t=>'<span class="chip">'+t.replace(/_/g,' ')+'</span>').join('')
+    + (s.customer && !s.customer.in_roster ? '<span class="chip chip--check">new customer</span>':'');
   $('play').classList.add('hide'); $('again').classList.add('hide'); $('next').classList.add('hide');
-  $('btn').classList.remove('hide'); $('btn').textContent='● Start'; $('timer').textContent='0.0s';
+  $('btn').classList.remove('hide'); $('btn').textContent='Start speaking';
+  $('timer').textContent='0.0s'; $('timer').removeAttribute('data-live');
 }
 
 $('btn').onclick = () => {
-  if(!recording){ chunks=[]; recording=true; t0=Date.now(); $('btn').textContent='■ Stop';
+  if(!recording){ chunks=[]; recording=true; t0=Date.now(); $('btn').textContent='Stop';
+    $('timer').setAttribute('data-live','1');
     timerId=setInterval(()=>$('timer').textContent=((Date.now()-t0)/1000).toFixed(1)+'s',100);
   } else {
-    recording=false; clearInterval(timerId);
+    recording=false; clearInterval(timerId); $('timer').removeAttribute('data-live');
     const len=chunks.reduce((a,c)=>a+c.length,0), flat=new Float32Array(len);
     let o=0; for(const c of chunks){flat.set(c,o); o+=c.length;}
     const {blob,dur}=wav(flat, ctx.sampleRate);
@@ -191,7 +230,7 @@ $('next').onclick = () => {
   if(idx>=SCENARIOS.length){
     $('rec').classList.add('hide'); $('done').classList.remove('hide');
     const n=results.filter(Boolean).length, tot=results.filter(Boolean).reduce((a,r)=>a+r.dur,0);
-    $('summary').textContent=n+' clips · '+tot.toFixed(0)+' seconds of audio recorded.';
+    $('summary').textContent='You recorded '+n+' clips, '+tot.toFixed(0)+' seconds of audio in total.';
   } else show();
 };
 
@@ -223,8 +262,8 @@ async function zip(files){
 }
 
 $('dl').onclick = async () => {
-  $('dl').disabled=true; $('dl').textContent='Packaging…';
-  const sp=meta.speaker_pseudonym.replace(/[^A-Za-z0-9]/g,'')||'spk';
+  $('dl').disabled=true; $('dl').textContent='Preparing your file';
+  const sp=meta.speaker_id;
   const files=[], manifest=[];
   results.forEach((r,i)=>{ if(!r) return;
     const s=SCENARIOS[i], fn=sp+'_'+s.id+'.wav';
@@ -236,6 +275,6 @@ $('dl').onclick = async () => {
     blob:new Blob([JSON.stringify({speaker:meta, clips:manifest},null,2)],{type:'application/json'})});
   const b=await zip(files), a=document.createElement('a');
   a.href=URL.createObjectURL(b); a.download='sautibench_'+sp+'.zip'; a.click();
-  $('dl').textContent='Downloaded ✓';
+  $('dl').textContent='Downloaded';
 };
 </script></body></html>
