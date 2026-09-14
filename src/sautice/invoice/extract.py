@@ -63,14 +63,27 @@ def _strip_filler(t: str) -> str:
 def heuristic_extract(transcript: str) -> Intent:
     text = transcript.strip()
 
-    # 1. Pull a trailing customer clause off the end first, so it is not parsed as
-    #    part of the last line item.
     customer = ""
-    m = re.search(r"\bfor\s+(?:customer|client)\s+(.+?)\s*[.?!]*\s*$", text, re.I)
-    if m:
+
+    # 0. Leading subject: "<Name> bought/wants/ordered ... <rest>". Common phrasing
+    #    where the customer opens the sentence rather than trailing it.
+    m = re.match(
+        r"^\s*([A-Z][\w&.'-]*(?:\s+[A-Z0-9][\w&.'-]*){0,4})\s+"
+        r"(?:bought|buys?|wants?|ordered|orders?|needs?|took|purchased|purchases?|is buying|would like)\b",
+        text,
+    )
+    if m and not re.search(r"\d", m.group(1)):
         customer = m.group(1).strip(" .,")
-        text = text[: m.start()]
-    else:
+        text = text[m.end():]
+
+    # 1. Otherwise pull a trailing customer clause off the end, so it is not parsed
+    #    as part of the last line item.
+    if not customer:
+        m = re.search(r"\bfor\s+(?:customer|client)\s+(.+?)\s*[.?!]*\s*$", text, re.I)
+        if m:
+            customer = m.group(1).strip(" .,")
+            text = text[: m.start()]
+    if not customer:
         m = re.search(r"\bto\s+(?:customer|client)\s+(.+?)\s*[.?!]*\s*$", text, re.I)
         if m:
             customer = m.group(1).strip(" .,")
@@ -127,12 +140,18 @@ def _parse_segment(seg: str) -> Line:
         qty = m.group(1)
         seg = seg[m.end():]
     else:
-        # leading number words
-        m = re.match(r"^\s*((?:\w+[\s-]*){1,3}?)\s+(?=" + _UNITS + r"|of\b|\w)", seg, re.I)
-        m2 = re.match(r"^\s*([a-z]+(?:[\s-][a-z]+)?)\s+", seg, re.I)
-        if m2 and _looks_like_number_word(m2.group(1)):
-            qty = m2.group(1).strip()
-            seg = seg[m2.end():]
+        # leading RUN of number words, stopping at the first non-number token
+        # ("five bags" -> qty "five", leaving "bags ..."; "twenty five bags" -> "twenty five").
+        toks = seg.split()
+        run = 0
+        for t in toks:
+            if t.lower().replace("-", "") in _NUMWORDS:
+                run += 1
+            else:
+                break
+        if run:
+            qty = " ".join(toks[:run])
+            seg = " ".join(toks[run:])
 
     # strip a leading unit + optional "of"
     seg = re.sub(r"^\s*" + _UNITS + r"\b", "", seg, flags=re.I)
@@ -149,7 +168,3 @@ _NUMWORDS = {
     "sixty", "seventy", "eighty", "ninety", "hundred", "thousand", "a", "couple",
     "dozen", "half",
 }
-
-
-def _looks_like_number_word(s: str) -> bool:
-    return all(w in _NUMWORDS for w in s.lower().replace("-", " ").split())

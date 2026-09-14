@@ -24,7 +24,8 @@ function repoRoot(): string {
 function loadBusiness(): Business {
   try {
     const p = process.env.SAUTICE_ROSTER || path.join(repoRoot(), "benchmarks", "data", "sautibench", "roster.json");
-    const roster = JSON.parse(fs.readFileSync(p, "utf8"));
+    // turbopackIgnore: runtime read of a known data file, not an app-source import.
+    const roster = JSON.parse(fs.readFileSync(/* turbopackIgnore: true */ p, "utf8"));
     return roster.business ?? { name: "Your Business" };
   } catch {
     return { name: "Your Business" };

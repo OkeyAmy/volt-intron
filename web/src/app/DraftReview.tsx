@@ -27,6 +27,7 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
   const [version, setVersion] = useState(0);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
+  const [editLine, setEditLine] = useState<number | null>(null);
   const selRef = useRef<Selections>({ lines: [] });
   const idemRef = useRef<string>(crypto.randomUUID());
 
@@ -80,6 +81,16 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
     post(sel, draftId);
   }, [draft, draftId, post]);
 
+  // Explicit override of a resolved line field (Change price / Change quantity).
+  const override = useCallback((i: number, patch: { qty?: number; unit_price_naira?: string }) => {
+    const sel = structuredClone(selRef.current);
+    while (draft && sel.lines.length < draft.lines.length) sel.lines.push({});
+    sel.lines[i] = { ...sel.lines[i], ...patch };
+    selRef.current = sel;
+    setEditLine(null);
+    post(sel, draftId);
+  }, [draft, draftId, post]);
+
   const confirm = useCallback(async () => {
     if (!draftId) return;
     setBusy(true); setError("");
@@ -107,8 +118,11 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
   }
 
   const customerName = draft.customer.resolved?.name ?? draft.customer.query;
+  const priceQuestion = draft.questions.some((q) => q.field === "price");
   return (
     <div className="rev">
+      <h2 className="rev-h2">Check your invoice</h2>
+
       <div className="rev-head">
         <span className="sr-label">Customer</span>
         <strong>{draft.customer.status === "resolved" || draft.customer.status === "new" ? customerName : <em className="sr-placeholder">to confirm</em>}</strong>
@@ -116,26 +130,41 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
 
       <table className="rev-table">
         <thead>
-          <tr><th>Item</th><th className="rev-num">Qty</th><th className="rev-num">Unit</th><th className="rev-num">Total</th></tr>
+          <tr><th>Item</th><th className="rev-num">Qty</th><th className="rev-num">Unit price</th><th className="rev-num">Total</th><th><span className="sr-visually-hidden">Actions</span></th></tr>
         </thead>
         <tbody>
           {draft.lines.map((l) => (
             <tr key={l.index}>
-              <td>{l.product.resolved?.name ?? l.query ?? <em className="sr-placeholder">?</em>}</td>
-              <td className="rev-num">{l.qty ?? "—"}</td>
-              <td className="rev-num">
+              <td data-label="Item">{l.product.resolved?.name ?? l.query ?? <em className="sr-placeholder">?</em>}</td>
+              <td className="rev-num" data-label="Qty">{l.qty ?? "—"}</td>
+              <td className="rev-num" data-label="Unit price">
                 {l.unit_price_display ?? "—"}
                 {l.unit_price_source === "spoken" && <span className="rev-tag" title="Price you said, overriding the catalogue">said</span>}
                 {l.unit_price_source === "catalog" && <span className="rev-tag" title="From your catalogue">list</span>}
               </td>
-              <td className="rev-num">{l.line_total_display ?? "—"}</td>
+              <td className="rev-num" data-label="Total">{l.line_total_display ?? "—"}</td>
+              <td className="rev-num" data-label="">
+                <button className="sr-linkbtn" onClick={() => setEditLine(editLine === l.index ? null : l.index)}
+                  aria-expanded={editLine === l.index} disabled={busy}>
+                  Change<span className="sr-visually-hidden"> {l.product.resolved?.name ?? l.query ?? "item"}</span>
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
         <tfoot>
-          <tr><td colSpan={3} className="rev-num"><strong>Total</strong></td><td className="rev-num"><strong>{draft.total_display ?? "—"}</strong></td></tr>
+          <tr><td colSpan={3} className="rev-num"><strong>Total</strong></td><td className="rev-num"><strong>{draft.total_display ?? "—"}</strong></td><td /></tr>
         </tfoot>
       </table>
+
+      {editLine != null && draft.lines[editLine] && (
+        <LineEditor
+          line={draft.lines[editLine]}
+          disabled={busy}
+          onApply={(patch) => override(editLine, patch)}
+          onCancel={() => setEditLine(null)}
+        />
+      )}
 
       {draft.terms.due_date && <p className="sr-meta">Payment due {draft.terms.due_date}</p>}
 
@@ -162,17 +191,60 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
 
       {error && <div className="sr-error" role="alert">{error}</div>}
 
-      <div className="sr-controls">
-        {draft.ready ? (
-          <button className="sr-btn sr-primary" onClick={confirm} disabled={busy}>
-            {busy ? "Issuing…" : `Confirm & issue — ${draft.total_display}`}
-          </button>
-        ) : (
-          <span className="sr-status">Answer the question{draft.questions.length > 1 ? "s" : ""} above to continue.</span>
-        )}
-        <button className="sr-btn sr-ghost" onClick={onCancel} disabled={busy}>Start over</button>
-      </div>
+      {draft.ready ? (
+        <div className="rev-create">
+          <div className="rev-createtotal"><span className="sr-label">Total</span> <strong className="sr-created-total">{draft.total_display}</strong></div>
+          <p className="sr-expect">The invoice will be created with these details.</p>
+          <div className="sr-controls">
+            <button className="sr-btn sr-primary" onClick={confirm} disabled={busy}>{busy ? "Creating…" : "Create invoice"}</button>
+            <button className="sr-btn sr-ghost" onClick={onCancel} disabled={busy}>Start over</button>
+          </div>
+        </div>
+      ) : (
+        <div className="sr-controls">
+          <span className="sr-status">
+            {priceQuestion ? "Check the price to see the total." : `Answer the question${draft.questions.length > 1 ? "s" : ""} above to continue.`}
+          </span>
+          <button className="sr-btn sr-ghost" onClick={onCancel} disabled={busy}>Start over</button>
+        </div>
+      )}
     </div>
+  );
+}
+
+function LineEditor({ line, disabled, onApply, onCancel }: {
+  line: { qty: number | null; unit_price_kobo: number | null };
+  disabled: boolean;
+  onApply: (patch: { qty?: number; unit_price_naira?: string }) => void;
+  onCancel: () => void;
+}) {
+  const [qty, setQty] = useState(line.qty != null ? String(line.qty) : "");
+  const [price, setPrice] = useState(line.unit_price_kobo != null ? String(line.unit_price_kobo / 100) : "");
+  const apply = () => {
+    const patch: { qty?: number; unit_price_naira?: string } = {};
+    if (qty.trim() && Number(qty) > 0) patch.qty = Math.floor(Number(qty));
+    if (price.trim()) patch.unit_price_naira = price.trim();
+    if (Object.keys(patch).length) onApply(patch);
+    else onCancel();
+  };
+  return (
+    <fieldset className="rev-q">
+      <legend>Change this item</legend>
+      <div className="rev-editrow">
+        <label className="sr-label" htmlFor="edit-qty">Quantity</label>
+        <input id="edit-qty" className="sr-select" inputMode="numeric" value={qty} disabled={disabled}
+          placeholder="e.g. 5" onChange={(e) => setQty(e.target.value)} />
+      </div>
+      <div className="rev-editrow">
+        <label className="sr-label" htmlFor="edit-price">Price per unit (₦)</label>
+        <input id="edit-price" className="sr-select" inputMode="decimal" value={price} disabled={disabled}
+          placeholder="e.g. 12500" onChange={(e) => setPrice(e.target.value)} />
+      </div>
+      <div className="rev-opts">
+        <button className="sr-btn sr-primary rev-opt" onClick={apply} disabled={disabled}>Apply</button>
+        <button className="sr-btn sr-ghost rev-opt" onClick={onCancel} disabled={disabled}>Cancel</button>
+      </div>
+    </fieldset>
   );
 }
 

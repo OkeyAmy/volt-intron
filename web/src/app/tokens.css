@@ -11,19 +11,22 @@
   /* --- colour: ink on paper, from the carbonless invoice book -------------- */
   --ink:        #16233F;   /* ballpoint blue-black: text, wordmark, settled rules */
   --ink-soft:   #5A6274;   /* secondary text */
-  --ink-faint:  #8A90A0;   /* tertiary text, placeholders */
+  --ink-faint:  #646A7A;   /* tertiary text, placeholders — 5.4:1 on leaf (AA normal) */
   --paper:      #F7F6F2;   /* page ground */
   --leaf:       #FFFFFF;   /* the sheet you write on */
-  --carbon:     #D9D5CA;   /* rules, borders, dividers */
+  --carbon:     #D9D5CA;   /* DECORATIVE rules/dividers only (1.5:1 — not for control edges) */
   --carbon-dim: #EAE7DF;   /* hairlines, inset fills */
+  --edge:       #858176;   /* border that IDENTIFIES an input/control — 3.9:1 on leaf */
 
   /* accents — each means exactly one thing */
   --settled:    #1F7A5C;   /* confirmed */
   --settled-bg: #E6F2EC;
-  --query:      #A9761A;   /* needs checking */
+  --query:      #80580D;   /* needs checking — 5.6:1 on query-bg (AA normal) */
   --query-bg:   #FBF1DE;
   --tally:      #C8102E;   /* the total rule. also destructive/error. nothing else. */
   --tally-bg:   #FCE9EC;
+  --danger-solid: #C8102E; /* solid destructive button ground — white label is 5.9:1 */
+  --on-danger:  #FFFFFF;   /* label on --danger-solid, both themes */
 
   --focus:      #16233F;
 
@@ -52,21 +55,25 @@
 /* --- dark: authored, not derived ------------------------------------------ */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --ink:#EEF1F6; --ink-soft:#A7AFC0; --ink-faint:#727B8E;
+    --ink:#EEF1F6; --ink-soft:#A7AFC0; --ink-faint:#8B93A5;
     --paper:#0E1526; --leaf:#161F33; --carbon:#2C3750; --carbon-dim:#1E2840;
+    --edge:#6B7590;
     --settled:#43B189; --settled-bg:#16302A;
     --query:#D6A03F;   --query-bg:#332813;
     --tally:#FF5A6E;   --tally-bg:#3A1720;
+    --danger-solid:#C8102E; --on-danger:#FFFFFF;
     --focus:#8FB4FF;
     --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
   }
 }
 :root[data-theme="dark"] {
-  --ink:#EEF1F6; --ink-soft:#A7AFC0; --ink-faint:#727B8E;
+  --ink:#EEF1F6; --ink-soft:#A7AFC0; --ink-faint:#8B93A5;
   --paper:#0E1526; --leaf:#161F33; --carbon:#2C3750; --carbon-dim:#1E2840;
+  --edge:#6B7590;
   --settled:#43B189; --settled-bg:#16302A;
   --query:#D6A03F;   --query-bg:#332813;
   --tally:#FF5A6E;   --tally-bg:#3A1720;
+  --danger-solid:#C8102E; --on-danger:#FFFFFF;
   --focus:#8FB4FF;
   --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
 }
