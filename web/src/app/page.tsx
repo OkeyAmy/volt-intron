@@ -1,13 +1,13 @@
 "use client";
 
 /**
- * Sautice recorder.
+ * Make an invoice — the Speak → Check → Create flow.
  *
- * Captures the microphone as 16 kHz PCM16 (via the AudioWorklet in
- * /pcm-recorder-worklet.js -- NOT MediaRecorder, whose Opus output the Intron
- * socket cannot read), streams it to the voice gateway at /api/voice/stream, and
- * shows interim and final transcripts. The gateway holds the Intron credentials
- * and speaks the streaming protocol; this page only moves audio and renders state.
+ * Speaking captures the microphone as 16 kHz PCM16 (via the AudioWorklet in
+ * /pcm-recorder-worklet.js -- NOT MediaRecorder, whose Opus the Intron socket
+ * cannot read) and streams it to the gateway. Typing reaches the SAME review, so
+ * the whole task works even when the microphone doesn't. The gateway holds the
+ * Intron credentials; this page only moves audio and renders state.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -16,27 +16,46 @@ import DraftReview from "./DraftReview";
 type Phase = "idle" | "starting" | "recording" | "finalizing" | "done" | "error";
 
 const LANGS: { code: string; label: string }[] = [
-  { code: "pcm", label: "Pidgin · English" },
-  { code: "yo", label: "Yoruba · English" },
-  { code: "ig", label: "Igbo · English" },
-  { code: "ha", label: "Hausa · English" },
+  { code: "pcm", label: "Pidgin + English" },
+  { code: "yo", label: "Yoruba + English" },
+  { code: "ig", label: "Igbo + English" },
+  { code: "ha", label: "Hausa + English" },
   { code: "en", label: "English" },
 ];
 
+// Trader-facing messages: state the problem and the way forward, never blame the speaker.
 const MIC_ERRORS: Record<string, string> = {
-  NotAllowedError: "Microphone access was blocked. Allow it in your browser and try again.",
-  NotFoundError: "No microphone was found. Connect one and try again.",
-  NotReadableError: "The microphone is in use by another app. Close it and try again.",
-  SecurityError: "Recording needs a secure (https) page or localhost.",
+  NotAllowedError: "Microphone access is off. Allow it in your browser settings, or type instead.",
+  NotFoundError: "No microphone was found. Connect one, or type your invoice details instead.",
+  NotReadableError: "The microphone is busy in another app. Close it and try again, or type instead.",
+  SecurityError: "Recording needs a secure (https) page. You can type your invoice details instead.",
+};
+
+const STATUS: Record<Phase, string> = {
+  idle: "",
+  starting: "Getting ready…",
+  recording: "You can speak now.",
+  finalizing: "Turning your recording into text…",
+  done: "Check your invoice details.",
+  error: "",
 };
 
 function Mark() {
   return (
-    <svg viewBox="0 0 32 32" role="img" aria-label="Sautice">
+    <svg viewBox="0 0 32 32" role="img" aria-label="Sautice" width="34" height="34">
       <g fill="none" strokeLinecap="round" strokeLinejoin="round">
         <path d="M2.5 13 Q5.5 3.5 8.5 13 Q11.5 22.5 14.5 13 L29.5 13" stroke="currentColor" strokeWidth="2.6" />
         <path d="M17 20.5 L29.5 20.5" stroke="var(--tally)" strokeWidth="2.6" />
       </g>
+    </svg>
+  );
+}
+
+function MicIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" aria-hidden="true">
+      <rect x="9" y="3" width="6" height="12" rx="3" fill="currentColor" />
+      <path d="M6 11a6 6 0 0 0 12 0M12 17v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -50,8 +69,11 @@ export default function Home() {
   const [level, setLevel] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [meta, setMeta] = useState<string | null>(null);
-  const [flow, setFlow] = useState<"transcript" | "review" | "issued">("transcript");
+  const [flow, setFlow] = useState<"compose" | "review" | "issued">("compose");
   const [issued, setIssued] = useState<{ id: string; number: string } | null>(null);
+  const [typing, setTyping] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [shareNote, setShareNote] = useState("");
 
   const phaseRef = useRef<Phase>(phase);
   useEffect(() => { phaseRef.current = phase; }, [phase]);
@@ -86,7 +108,6 @@ export default function Home() {
     if (ws && ws.readyState <= WebSocket.OPEN) ws.close();
   }, [teardownAudio]);
 
-  // Release everything if the component unmounts mid-recording.
   useEffect(() => closeAll, [closeAll]);
 
   const fail = useCallback((message: string) => {
@@ -97,7 +118,7 @@ export default function Home() {
 
   const start = useCallback(async () => {
     setError(""); setPartial(""); setFinalText(""); setMeta(null); setElapsed(0);
-    setFlow("transcript"); setIssued(null);
+    setFlow("compose"); setIssued(null); setTyping(false); setShareNote("");
     setPhase("starting");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -120,12 +141,10 @@ export default function Home() {
           if (openRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(d.buffer);
           } else {
-            queueRef.current.push(d.buffer); // buffer until the gateway socket opens
+            queueRef.current.push(d.buffer);
           }
         }
       };
-      // A capture-only worklet must still be pulled by the graph, so route it to the
-      // destination through a muted gain -- silent output, no echo of the microphone.
       const sink = ctx.createGain();
       sink.gain.value = 0;
       source.connect(node);
@@ -156,27 +175,25 @@ export default function Home() {
           const r = msg.result as { transcript?: string; msStopToFinal?: number | null; partialCount?: number };
           setFinalText(r?.transcript ?? "");
           setPartial("");
-          setMeta(`${r?.partialCount ?? 0} partials · ${Math.round(r?.msStopToFinal ?? 0)}ms to final`);
+          setMeta(`heard in ${Math.round((r?.msStopToFinal ?? 0) / 100) / 10}s`);
           setPhase("done");
           closeAll();
         } else if (msg.type === "error") {
-          fail(String(msg.message ?? "Transcription failed. Please try again."));
+          fail(String(msg.message ?? "We couldn't use this recording. Please record again or type the details."));
         }
       };
-      ws.onerror = () => { if (phaseRef.current !== "done") fail("Lost the connection to the voice service."); };
+      ws.onerror = () => { if (phaseRef.current !== "done") fail("The connection stopped. Please record again or type the details."); };
       ws.onclose = () => {
-        // A close before a final result, with no explicit error, is still a failure.
-        if (openRef.current && phaseRef.current === "recording") fail("The connection closed before a transcript arrived.");
+        if (openRef.current && phaseRef.current === "recording") fail("The connection stopped. Please record again or type the details.");
       };
     } catch (e) {
       const name = (e as Error).name;
-      fail(MIC_ERRORS[name] ?? `Could not start recording: ${(e as Error).message}`);
+      fail(MIC_ERRORS[name] ?? `Could not start recording: ${(e as Error).message}. You can type instead.`);
     }
   }, [language, closeAll, fail]);
 
   const stop = useCallback(() => {
     if (phaseRef.current !== "recording") return;
-    // Stop capturing, ask the gateway to commit, and wait for the final transcript.
     teardownAudio();
     setPhase("finalizing");
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -186,117 +203,159 @@ export default function Home() {
 
   const cancel = useCallback(() => { closeAll(); setPhase("idle"); setPartial(""); setError(""); }, [closeAll]);
 
+  const useTyped = useCallback(() => {
+    const t = typed.trim();
+    if (!t) return;
+    closeAll();
+    setError(""); setPartial(""); setFinalText(t); setPhase("done"); setFlow("review");
+  }, [typed, closeAll]);
+
+  const shareInvoice = useCallback(async () => {
+    if (!issued) return;
+    const url = `${location.origin}/invoice/${issued.id}`;
+    const text = `Invoice ${issued.number} from Sautice`;
+    try {
+      if (navigator.share) { await navigator.share({ title: text, text, url }); setShareNote("Share sheet opened. Sharing isn't confirmed until you send it."); return; }
+      await navigator.clipboard.writeText(url);
+      setShareNote("Invoice link copied. Paste it wherever you want to send it.");
+    } catch {
+      setShareNote(`Copy this link to share: ${url}`);
+    }
+  }, [issued]);
+
   const busy = phase === "starting" || phase === "recording" || phase === "finalizing";
-  const statusText = {
-    idle: "Ready when you are.",
-    starting: "Requesting the microphone…",
-    recording: "Listening…",
-    finalizing: "Transcribing…",
-    done: "Done.",
-    error: "",
-  }[phase];
+  const langLabel = LANGS.find((l) => l.code === language)?.label ?? language;
 
   return (
-    <div className="sr-page">
-      <main className="sr-card">
+    <main id="main" className="sr-page">
+      <div className="sr-card">
         <header className="sr-brand">
           <Mark />
-          <div>
-            <div className="sr-wordmark">Sautice</div>
-          </div>
+          <div className="sr-wordmark">Make an invoice</div>
         </header>
-        <p className="sr-tagline">
-          Speak a sale the way you would to a customer. Sautice turns it into a transcript you can
-          review — the first step to an invoice.
-        </p>
+
+        {flow === "compose" && phase !== "recording" && phase !== "finalizing" && (
+          <>
+            <p className="sr-tagline">Say the customer, what you sold, the quantity, and the price.</p>
+            <p className="sr-example">
+              Example: <span lang="en">&ldquo;Adebayo Stores bought five bags of cement at twelve thousand five hundred naira each.&rdquo;</span>
+            </p>
+          </>
+        )}
 
         <div className="sr-row">
-          <label className="sr-label" htmlFor="lang">Language</label>
-          <select
-            id="lang"
-            className="sr-select"
-            value={language}
-            disabled={busy}
-            onChange={(e) => setLanguage(e.target.value)}
-          >
+          <label className="sr-label" htmlFor="lang">Speech language</label>
+          <select id="lang" className="sr-select" value={language} disabled={busy} onChange={(e) => setLanguage(e.target.value)}>
             {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
           </select>
+          <Link className="sr-help-link" href="/help">Need help?</Link>
         </div>
 
-        <div className="sr-controls">
-          {phase !== "recording" && phase !== "finalizing" && (
-            <button className="sr-btn sr-primary" onClick={start} disabled={phase === "starting"}>
-              {phase === "starting" ? "Starting…" : phase === "done" || phase === "error" ? "Record again" : "Record"}
-            </button>
-          )}
-          {phase === "recording" && (
-            <>
-              <button className="sr-btn sr-danger" onClick={stop}>
-                <span className="sr-dot" aria-hidden /> Stop
+        {/* Compose: speak or type */}
+        {flow === "compose" && !typing && phase !== "recording" && phase !== "finalizing" && (
+          <>
+            <div className="sr-controls">
+              <button className="sr-btn sr-primary" onClick={start} disabled={phase === "starting"}>
+                <MicIcon /> {phase === "starting" ? "Starting…" : phase === "done" || phase === "error" ? "Record again" : "Start speaking"}
               </button>
-              <button className="sr-btn sr-ghost" onClick={cancel}>Cancel</button>
-              <span className="sr-timer" aria-hidden>{elapsed.toFixed(1)}s</span>
-            </>
-          )}
-          {phase === "finalizing" && <span className="sr-timer">Transcribing…</span>}
-        </div>
+              <button className="sr-btn sr-ghost" onClick={() => { setTyping(true); setTyped(finalText); }}>Type instead</button>
+            </div>
+            <p className="sr-expect">You&apos;ll check the details before creating the invoice.</p>
+          </>
+        )}
 
-        {(phase === "recording" || phase === "finalizing") && (
-          <div className="sr-meter" role="progressbar" aria-label="Microphone level" aria-valuenow={Math.round(level * 100)} aria-valuemin={0} aria-valuemax={100}>
-            <div className="sr-meterFill" style={{ width: `${Math.round(level * 100)}%` }} />
+        {flow === "compose" && typing && (
+          <div className="rev">
+            <label className="sr-label" htmlFor="typed">Type your sale</label>
+            <textarea id="typed" className="type-area" value={typed} disabled={busy}
+              placeholder="e.g. Adebayo Stores bought five bags of cement at twelve thousand five hundred naira each"
+              onChange={(e) => setTyped(e.target.value)} />
+            <div className="sr-controls">
+              <button className="sr-btn sr-primary" onClick={useTyped} disabled={!typed.trim()}>Check the details</button>
+              <button className="sr-btn sr-ghost" onClick={() => setTyping(false)}>Speak instead</button>
+            </div>
           </div>
         )}
 
+        {/* Recording controls */}
+        {(phase === "recording" || phase === "finalizing") && (
+          <>
+            <div className="sr-controls">
+              {phase === "recording" ? (
+                <>
+                  <button className="sr-btn sr-danger" onClick={stop}>
+                    <span className="sr-dot" aria-hidden /> Stop recording
+                  </button>
+                  <button className="sr-btn sr-ghost" onClick={cancel}>Cancel</button>
+                  <span className="sr-timer" aria-hidden>{elapsed.toFixed(1)}s</span>
+                </>
+              ) : (
+                <span className="sr-timer">Turning your recording into text…</span>
+              )}
+            </div>
+            <div className="sr-meter" role="progressbar" aria-label="Microphone level" aria-valuenow={Math.round(level * 100)} aria-valuemin={0} aria-valuemax={100}>
+              <div className="sr-meterFill" style={{ width: `${Math.round(level * 100)}%` }} />
+            </div>
+            <p className="sr-meta">Speaking {langLabel}</p>
+          </>
+        )}
+
         <div className="sr-status" role="status" aria-live="polite">
-          {statusText && <span>{statusText}</span>}
+          {STATUS[phase] && <span>{STATUS[phase]}</span>}
           {meta && <span className="sr-meta">· {meta}</span>}
         </div>
 
+        {/* Body: error / issued / review / transcript */}
         {error ? (
-          <div className="sr-error" role="alert">{error}</div>
-        ) : flow === "issued" && issued ? (
           <div className="rev">
-            <div className="sr-transcript">
-              <span className="sr-badge sr-badgeFinal">Issued</span>{" "}
-              Invoice <strong>{issued.number}</strong> is ready.
-            </div>
+            <div className="sr-error" role="alert">{error}</div>
             <div className="sr-controls">
-              <Link className="sr-btn sr-primary" href={`/invoice/${issued.id}`}>Open invoice {issued.number}</Link>
+              <button className="sr-btn sr-primary" onClick={start}><MicIcon /> Record again</button>
+              <button className="sr-btn sr-ghost" onClick={() => { setError(""); setPhase("idle"); setTyping(true); setTyped(""); }}>Type instead</button>
             </div>
+          </div>
+        ) : flow === "issued" && issued ? (
+          <div className="sr-created">
+            <div><span className="sr-badge sr-badgeFinal">Invoice created</span></div>
+            <p>Invoice <strong>{issued.number}</strong> is saved. It&apos;s a request for payment — not a receipt.</p>
+            <div className="sr-controls">
+              <Link className="sr-btn sr-primary" href={`/invoice/${issued.id}`}>View invoice</Link>
+              <button className="sr-btn sr-ghost" onClick={shareInvoice}>Share invoice</button>
+              <button className="sr-btn sr-ghost" onClick={start}>Create another</button>
+            </div>
+            {shareNote && <p className="sr-meta" role="status">{shareNote}</p>}
           </div>
         ) : flow === "review" && finalText ? (
           <DraftReview
             transcript={finalText}
             onIssued={(id, number) => { setIssued({ id, number }); setFlow("issued"); }}
-            onCancel={() => setFlow("transcript")}
+            onCancel={() => { setFlow("compose"); setPhase("idle"); }}
           />
-        ) : (
+        ) : (phase === "recording" || phase === "finalizing" || finalText) ? (
           <>
             <div className="sr-transcript" aria-live="polite">
               {finalText ? (
-                <>
-                  <span className="sr-badge sr-badgeFinal">Final</span>{" "}
-                  {finalText}
-                </>
+                <><span className="sr-badge sr-badgeFinal">Final</span> {finalText}</>
               ) : partial ? (
-                <span className="sr-partial">{partial}</span>
+                <><span className="sr-label">Words heard so far</span><br /><span className="sr-partial">{partial}</span></>
               ) : (
-                <span className="sr-placeholder">Your transcript will appear here.</span>
+                <span className="sr-placeholder">Your words will appear here.</span>
               )}
             </div>
             {finalText && phase === "done" && (
               <div className="sr-controls">
-                <button className="sr-btn sr-primary" onClick={() => setFlow("review")}>Review &amp; create invoice</button>
+                <button className="sr-btn sr-primary" onClick={() => setFlow("review")}>Check the details</button>
+                <button className="sr-btn sr-ghost" onClick={start}>Record again</button>
               </div>
             )}
           </>
-        )}
-      </main>
+        ) : null}
+      </div>
 
       <p className="sr-foot">
-        Audio streams to this app&apos;s voice gateway, which holds the Intron credentials — the key
-        never reaches the browser. Recordings are not stored server-side by this page.
+        Audio streams to this app&apos;s voice gateway, which holds the Intron key — the key never
+        reaches the browser. Recordings aren&apos;t stored by this page.
       </p>
-    </div>
+    </main>
   );
 }

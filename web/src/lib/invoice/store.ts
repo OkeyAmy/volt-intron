@@ -179,6 +179,34 @@ export function getInvoice(id: string): InvoiceRow | null {
   return row ? hydrateInvoice(row) : null;
 }
 
+export interface InvoiceListItem {
+  id: string;
+  number: string;
+  customer_name: string | null;
+  total_kobo: number | null;
+  created_at: string;
+}
+
+/** Issued invoices for a workspace, newest first, optionally filtered by a query
+ *  over the invoice number or customer name. */
+export function listInvoices(opts: { workspace?: string; q?: string; limit?: number } = {}): InvoiceListItem[] {
+  const d = connect();
+  const workspace = opts.workspace ?? "demo";
+  const limit = Math.min(Math.max(opts.limit ?? 100, 1), 500);
+  const q = (opts.q ?? "").trim();
+  const rows = q
+    ? d.prepare(
+        `SELECT id, number, customer_name, total_kobo, created_at FROM invoices
+         WHERE workspace = ? AND (number LIKE ? OR customer_name LIKE ? COLLATE NOCASE)
+         ORDER BY created_at DESC LIMIT ?`,
+      ).all(workspace, `%${q}%`, `%${q}%`, limit)
+    : d.prepare(
+        `SELECT id, number, customer_name, total_kobo, created_at FROM invoices
+         WHERE workspace = ? ORDER BY created_at DESC LIMIT ?`,
+      ).all(workspace, limit);
+  return rows as unknown as InvoiceListItem[];
+}
+
 function hydrateInvoice(row: Record<string, unknown>): InvoiceRow {
   return {
     id: row.id as string,

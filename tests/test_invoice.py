@@ -52,6 +52,14 @@ class TestExtraction:
         assert len(i.lines) == 2
         assert i.customer_query == "Adebayo Stores"
 
+    def test_leading_customer_subject(self):
+        # "<Name> bought <qty> <product> at <price> each" — customer opens the sentence.
+        i = heuristic_extract("Adebayo Stores bought five bags of cement at twelve thousand five hundred naira each")
+        assert i.customer_query == "Adebayo Stores"
+        assert len(i.lines) == 1
+        assert i.lines[0].qty_text == "five"
+        assert "cement" in i.lines[0].product_query
+
 
 class TestDraftComputation:
     def _draft(self, transcript, selections=None):
@@ -61,6 +69,13 @@ class TestDraftComputation:
         d = self._draft("invoice for 5 bags of cement at 12500 naira each for customer Musa")
         assert d["lines"][0]["line_total_kobo"] == 6_250_000
         assert d["total_display"] == "₦62,500"
+
+    def test_example_phrasing_resolves_and_is_ready(self):
+        # The on-screen example must actually parse end to end.
+        d = self._draft("Adebayo Stores bought five bags of cement at twelve thousand five hundred naira each")
+        assert d["customer"]["resolved"]["name"] == "Adebayo Stores"
+        assert d["total_display"] == "₦62,500"
+        assert d["ready"] is True and d["questions"] == []
 
     def test_spoken_price_is_labelled_as_such(self):
         d = self._draft("invoice for 5 bags of cement at 12500 naira each for customer Musa")
