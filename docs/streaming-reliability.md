@@ -60,11 +60,34 @@ handling and terminal-state logic have exactly one implementation.
 - **Testable without keys.** A `wsFactory` option injects the WebSocket, so the
   regression suite drives a fake upstream with no network or credentials.
 
+## Verified against the live endpoint
+
+A real streaming round trip through the rewritten client succeeded against
+`wss://infer.voice.intron.io/stt/v1/stream` with a configured `INTRON_API_KEY`:
+
+```
+audio: 9.63s  308088 bytes PCM16 @16k mono
+--- use_language_asr_input=pcm ---
+  session 4e5be7eb…  credits 1509.35
+  partial: Good afternoon
+  ... (4 partials)
+  partials=4  firstPartial=5459ms  stopToFinal=9662ms  total=11513ms
+  FINAL: "Good afternoon, please record an invoice for 5 bags of cement at 12500 ...
+          125 naira each for customer mosa"
+```
+
+This confirms auth handshake, readiness gating, packetisation, commit and the final
+transcript end to end, plus the WAV path on real 22.05kHz→16kHz input (duration
+preserved 9.63s→9.63s). The clip is Windows SAPI **English TTS** used only to smoke
+the pipeline — it is **not** a code-switching or quality benchmark, and the mixed
+`12500`/`125 naira` reading is the provider's output on synthetic speech, not a
+client bug. `web/scripts/smoke-intron.mts` now validates its language argument,
+prints redacted diagnostics, and exits non-zero on failure.
+
 ## Not done here (needs external inputs)
 
-- The live browser→gateway→Sahara recording (needs `INTRON_API_KEY` + a permitted
-  audio fixture; `web/scripts/smoke-intron.mts` still points at a `fixtures/`
-  file that is absent from the tree).
+- Live validation with **real Nigerian code-switched speech** (the run above used
+  synthetic English TTS; product-quality per language pair still needs human clips).
 - A Sahara **file-transcription fallback** for recoverable streaming failures — the
   REST contract could not be verified from the docs during the audit, so it is left
   unimplemented rather than guessed.

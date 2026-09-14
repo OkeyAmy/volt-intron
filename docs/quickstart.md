@@ -23,7 +23,8 @@ uv sync
 uv run pytest
 ```
 
-Expected: **78 passed** — 27 for the money engine, 51 for the naira number grammar.
+Expected: **83 passed** — 32 for the money engine (including immutability and
+sign-preserving `spoken()` regressions), 51 for the naira number grammar.
 
 These run with no network and no credentials. If they pass, the parts of the system that decide
 what a customer owes are working.
@@ -113,7 +114,8 @@ Stated plainly so nothing here is mistaken for working software:
 |---|---|
 | Money engine, naira number grammar | **Runs today**, 78 tests |
 | Speaker recorder, benchmark scenario set | **Runs today** |
-| Intron STT streaming + TTS | **Verified working** via the smoke script |
+| Intron STT streaming | **Verified live** via `web/scripts/smoke-intron.mts` (real round trip) |
+| Intron TTS | Not verified |
 | Invoice engine, state machine | Not built |
 | Roster resolver | Not built |
 | Agent layer (Groq) | Not built |
