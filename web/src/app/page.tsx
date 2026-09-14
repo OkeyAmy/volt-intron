@@ -36,6 +36,11 @@ const MIC_ERRORS: Record<string, string> = {
 // reconnecting keeps the recording alive through the upstream's own hiccups.
 const MAX_GENS = 3;
 
+// The voice gateway needs a persistent WebSocket server, which a serverless
+// deployment (e.g. Vercel) cannot host. Set NEXT_PUBLIC_VOICE_ENABLED=false there:
+// the app leads with typing, which reaches the same review and works everywhere.
+const VOICE = process.env.NEXT_PUBLIC_VOICE_ENABLED !== "false";
+
 const STATUS: Record<Phase, string> = {
   idle: "",
   starting: "Getting ready…",
@@ -76,7 +81,7 @@ export default function Home() {
   const [meta, setMeta] = useState<string | null>(null);
   const [flow, setFlow] = useState<"compose" | "review" | "issued">("compose");
   const [issued, setIssued] = useState<{ id: string; number: string } | null>(null);
-  const [typing, setTyping] = useState(false);
+  const [typing, setTyping] = useState(!VOICE);
   const [typed, setTyped] = useState("");
   const [shareNote, setShareNote] = useState("");
 
@@ -272,6 +277,14 @@ export default function Home() {
 
   const cancel = useCallback(() => { closeAll(); setPhase("idle"); setPartial(""); setError(""); }, [closeAll]);
 
+  // Return to the compose screen without touching the microphone (used after an
+  // invoice is created, and everywhere on a voice-disabled deployment).
+  const reset = useCallback(() => {
+    closeAll();
+    setError(""); setPartial(""); setFinalText(""); setMeta(null); setElapsed(0);
+    setFlow("compose"); setIssued(null); setTyped(""); setTyping(!VOICE); setPhase("idle"); setShareNote("");
+  }, [closeAll]);
+
   const useTyped = useCallback(() => {
     const t = typed.trim();
     if (!t) return;
@@ -313,10 +326,14 @@ export default function Home() {
         )}
 
         <div className="sr-row">
-          <label className="sr-label" htmlFor="lang">Speech language</label>
-          <select id="lang" className="sr-select" value={language} disabled={busy} onChange={(e) => setLanguage(e.target.value)}>
-            {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
-          </select>
+          {VOICE && (
+            <>
+              <label className="sr-label" htmlFor="lang">Speech language</label>
+              <select id="lang" className="sr-select" value={language} disabled={busy} onChange={(e) => setLanguage(e.target.value)}>
+                {LANGS.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
+              </select>
+            </>
+          )}
           <Link className="sr-help-link" href="/help">Need help?</Link>
         </div>
 
@@ -324,10 +341,16 @@ export default function Home() {
         {flow === "compose" && !typing && phase !== "recording" && phase !== "finalizing" && (
           <>
             <div className="sr-controls">
-              <button className="sr-btn sr-primary" onClick={start} disabled={phase === "starting"}>
-                <MicIcon /> {phase === "starting" ? "Starting…" : phase === "done" || phase === "error" ? "Record again" : "Start speaking"}
-              </button>
-              <button className="sr-btn sr-ghost" onClick={() => { setTyping(true); setTyped(finalText); }}>Type instead</button>
+              {VOICE ? (
+                <>
+                  <button className="sr-btn sr-primary" onClick={start} disabled={phase === "starting"}>
+                    <MicIcon /> {phase === "starting" ? "Starting…" : phase === "done" || phase === "error" ? "Record again" : "Start speaking"}
+                  </button>
+                  <button className="sr-btn sr-ghost" onClick={() => { setTyping(true); setTyped(finalText); }}>Type instead</button>
+                </>
+              ) : (
+                <button className="sr-btn sr-primary" onClick={() => { setTyping(true); setTyped(finalText); }}>Type your sale</button>
+              )}
             </div>
             <p className="sr-expect">You&apos;ll check the details before creating the invoice.</p>
           </>
@@ -341,7 +364,7 @@ export default function Home() {
               onChange={(e) => setTyped(e.target.value)} />
             <div className="sr-controls">
               <button className="sr-btn sr-primary" onClick={useTyped} disabled={!typed.trim()}>Check the details</button>
-              <button className="sr-btn sr-ghost" onClick={() => setTyping(false)}>Speak instead</button>
+              {VOICE && <button className="sr-btn sr-ghost" onClick={() => setTyping(false)}>Speak instead</button>}
             </div>
           </div>
         )}
@@ -379,8 +402,14 @@ export default function Home() {
           <div className="rev">
             <div className="sr-error" role="alert">{error}</div>
             <div className="sr-controls">
-              <button className="sr-btn sr-primary" onClick={start}><MicIcon /> Record again</button>
-              <button className="sr-btn sr-ghost" onClick={() => { setError(""); setPhase("idle"); setTyping(true); setTyped(""); }}>Type instead</button>
+              {VOICE ? (
+                <>
+                  <button className="sr-btn sr-primary" onClick={start}><MicIcon /> Record again</button>
+                  <button className="sr-btn sr-ghost" onClick={() => { setError(""); setPhase("idle"); setTyping(true); setTyped(""); }}>Type instead</button>
+                </>
+              ) : (
+                <button className="sr-btn sr-primary" onClick={reset}>Type again</button>
+              )}
             </div>
           </div>
         ) : flow === "issued" && issued ? (
@@ -390,7 +419,7 @@ export default function Home() {
             <div className="sr-controls">
               <Link className="sr-btn sr-primary" href={`/invoice/${issued.id}`}>View invoice</Link>
               <button className="sr-btn sr-ghost" onClick={shareInvoice}>Share invoice</button>
-              <button className="sr-btn sr-ghost" onClick={start}>Create another</button>
+              <button className="sr-btn sr-ghost" onClick={reset}>Create another</button>
             </div>
             {shareNote && <p className="sr-meta" role="status">{shareNote}</p>}
           </div>
@@ -422,8 +451,9 @@ export default function Home() {
       </div>
 
       <p className="sr-foot">
-        Audio streams to this app&apos;s voice gateway, which holds the Intron key — the key never
-        reaches the browser. Recordings aren&apos;t stored by this page.
+        {VOICE
+          ? "Audio streams to this app's voice gateway, which holds the Intron key — the key never reaches the browser. Recordings aren't stored by this page."
+          : "Type a sale in your own words and check the details before creating the invoice. Voice input isn't available on this deployment."}
       </p>
     </main>
   );

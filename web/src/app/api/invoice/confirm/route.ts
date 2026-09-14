@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: "draftId, version and idempotencyKey are required" }, { status: 400 });
   }
 
-  const r = confirmDraft({ draftId, version, idempotencyKey });
+  const r = await confirmDraft({ draftId, version, idempotencyKey });
   switch (r.status) {
     case "not_found":
       return Response.json({ ok: false, error: "draft not found" }, { status: 404 });

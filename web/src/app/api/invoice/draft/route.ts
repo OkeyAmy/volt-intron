@@ -1,7 +1,7 @@
 /**
  * Create or refine an invoice draft from a transcript. Refinement (with a draftId)
- * re-runs the SAME transcript through the authoritative Python core with the
- * reviewer's selections, and bumps the draft version.
+ * re-runs the SAME transcript through the invoice core (an in-process TypeScript
+ * port of the Python engine) with the reviewer's selections, and bumps the version.
  */
 import { runBridge } from "@/lib/invoice/bridge";
 import { getDraft, saveNewDraft, updateDraft } from "@/lib/invoice/store";
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
   let baseTranscript = transcript;
   if (draftId) {
-    const existing = getDraft(draftId);
+    const existing = await getDraft(draftId);
     if (!existing) return Response.json({ ok: false, error: "draft not found" }, { status: 404 });
     baseTranscript = existing.transcript ?? transcript; // re-resolve the same words
   }
@@ -36,8 +36,8 @@ export async function POST(req: Request) {
   }
 
   const row = draftId
-    ? updateDraft(draftId, { selections, draft: resp.draft })
-    : saveNewDraft({ transcript: baseTranscript ?? "", selections, draft: resp.draft });
+    ? await updateDraft(draftId, { selections, draft: resp.draft })
+    : await saveNewDraft({ transcript: baseTranscript ?? "", selections, draft: resp.draft });
   if (!row) return Response.json({ ok: false, error: "draft not found" }, { status: 404 });
 
   return Response.json({ ok: true, draftId: row.id, version: row.version, draft: row.draft });

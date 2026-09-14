@@ -3,11 +3,10 @@
  * the figures are the snapshot taken at confirmation, not recomputed here. Use the
  * browser's print dialog to save a PDF.
  */
-import fs from "node:fs";
-import path from "node:path";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getInvoice } from "@/lib/invoice/store";
+import { ROSTER } from "@/lib/invoice/core/roster";
 import PrintButton from "./PrintButton";
 
 export const dynamic = "force-dynamic";
@@ -15,29 +14,13 @@ export const runtime = "nodejs";
 
 interface Business { name: string; address?: string; phone?: string; email?: string }
 
-function repoRoot(): string {
-  if (process.env.SAUTICE_ROOT) return process.env.SAUTICE_ROOT;
-  const cwd = process.cwd();
-  return path.basename(cwd) === "web" ? path.dirname(cwd) : cwd;
-}
-
-function loadBusiness(): Business {
-  try {
-    const p = process.env.SAUTICE_ROSTER || path.join(repoRoot(), "benchmarks", "data", "sautibench", "roster.json");
-    // turbopackIgnore: runtime read of a known data file, not an app-source import.
-    const roster = JSON.parse(fs.readFileSync(/* turbopackIgnore: true */ p, "utf8"));
-    return roster.business ?? { name: "Your Business" };
-  } catch {
-    return { name: "Your Business" };
-  }
-}
+// Bundled roster (no filesystem read, so it works on serverless too).
+const biz = (ROSTER.business as unknown as Business) ?? { name: "Your Business" };
 
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const inv = getInvoice(id);
+  const inv = await getInvoice(id);
   if (!inv) notFound();
-
-  const biz = loadBusiness();
   const d = inv.snapshot;
   const issued = new Date(inv.created_at).toISOString().slice(0, 10);
 

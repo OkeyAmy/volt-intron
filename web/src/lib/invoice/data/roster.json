@@ -1,0 +1,51 @@
+{
+  "business": {
+    "id": "biz_demo_001",
+    "name": "Olumide Building Materials Ltd",
+    "address": "14 Agege Motor Road, Mushin, Lagos",
+    "phone": "+234 803 000 0001",
+    "email": "sales@olumidebuilding.ng",
+    "currency": "NGN",
+    "tax": {
+      "mode": "not_registered",
+      "note": "Below the NGN 25m VAT registration threshold. VAT only applied when explicitly stated by the user."
+    }
+  },
+  "_comment": "Confusable clusters are deliberate. Grounding must disambiguate or abstain, never snap.",
+  "customers": [
+    {"id": "c01", "name": "Adebayo Stores",            "phone": "+234 803 111 0001", "cluster": "adebayo"},
+    {"id": "c02", "name": "Adebayo Ventures",          "phone": "+234 803 111 0002", "cluster": "adebayo"},
+    {"id": "c03", "name": "Adeboye Stores",            "phone": "+234 803 111 0003", "cluster": "adebayo"},
+    {"id": "c04", "name": "Chinedu Enterprises",       "phone": "+234 803 111 0004", "cluster": "chinedu"},
+    {"id": "c05", "name": "Chinedu & Sons Ltd",        "phone": "+234 803 111 0005", "cluster": "chinedu"},
+    {"id": "c06", "name": "Emeka Global Concept",      "phone": "+234 803 111 0006", "cluster": "emeka"},
+    {"id": "c07", "name": "Emeka Global Services",     "phone": "+234 803 111 0007", "cluster": "emeka"},
+    {"id": "c08", "name": "Musa Hardware",             "phone": "+234 803 111 0008", "cluster": "musa"},
+    {"id": "c09", "name": "Musa & Brothers",           "phone": "+234 803 111 0009", "cluster": "musa"},
+    {"id": "c10", "name": "Ngozi Ventures",            "phone": "+234 803 111 0010", "cluster": "ngozi"},
+    {"id": "c11", "name": "Funmilayo Trading Co",      "phone": "+234 803 111 0011", "cluster": "solo"},
+    {"id": "c12", "name": "Ibrahim Sani Nig Ltd",      "phone": "+234 803 111 0012", "cluster": "solo"},
+    {"id": "c13", "name": "Blessing Okafor Stores",    "phone": "+234 803 111 0013", "cluster": "solo"},
+    {"id": "c14", "name": "Yusuf Abdullahi Trading",   "phone": "+234 803 111 0014", "cluster": "solo"},
+    {"id": "c15", "name": "Tunde Bakare Ltd",          "phone": "+234 803 111 0015", "cluster": "solo"},
+    {"id": "c16", "name": "Uchenna Nwosu Ventures",    "phone": "+234 803 111 0016", "cluster": "solo"},
+    {"id": "c17", "name": "Aisha Bello Enterprises",   "phone": "+234 803 111 0017", "cluster": "solo"},
+    {"id": "c18", "name": "Segun Oyelaran & Co",       "phone": "+234 803 111 0018", "cluster": "solo"},
+    {"id": "c19", "name": "Kemi Adeyemi Stores",       "phone": "+234 803 111 0019", "cluster": "solo"},
+    {"id": "c20", "name": "Hassan Garba Trading",      "phone": "+234 803 111 0020", "cluster": "solo"}
+  ],
+  "products": [
+    {"id": "p01", "name": "Dangote Cement 50kg",  "unit": "bag",    "unit_price_kobo": 1250000, "aliases": ["cement", "dangote"], "cluster": "cement"},
+    {"id": "p02", "name": "BUA Cement 50kg",      "unit": "bag",    "unit_price_kobo": 1210000, "aliases": ["bua"],               "cluster": "cement"},
+    {"id": "p03", "name": "Lafarge Cement 50kg",  "unit": "bag",    "unit_price_kobo": 1230000, "aliases": ["lafarge"],           "cluster": "cement"},
+    {"id": "p04", "name": "Iron Rod 12mm",        "unit": "length", "unit_price_kobo":  850000, "aliases": ["rod", "12mm"],       "cluster": "rod"},
+    {"id": "p05", "name": "Iron Rod 16mm",        "unit": "length", "unit_price_kobo": 1150000, "aliases": ["16mm"],              "cluster": "rod"},
+    {"id": "p06", "name": "Emulsion Paint 20L",   "unit": "bucket", "unit_price_kobo":  800000, "aliases": ["paint", "emulsion"], "cluster": "paint"},
+    {"id": "p07", "name": "Gloss Paint 4L",       "unit": "tin",    "unit_price_kobo":  350000, "aliases": ["gloss"],             "cluster": "paint"},
+    {"id": "p08", "name": "Roofing Sheet 0.55mm", "unit": "sheet",  "unit_price_kobo":  920000, "aliases": ["roofing sheet"],     "cluster": "roof"},
+    {"id": "p09", "name": "Sharp Sand",           "unit": "trip",   "unit_price_kobo":8500000, "aliases": ["sand"],              "cluster": "agg"},
+    {"id": "p10", "name": "Granite 3/4 inch",     "unit": "trip",   "unit_price_kobo":12000000,"aliases": ["granite", "stone"],  "cluster": "agg"},
+    {"id": "p11", "name": "PVC Pipe 4 inch",      "unit": "length", "unit_price_kobo":  420000, "aliases": ["pipe", "pvc"],       "cluster": "pipe"},
+    {"id": "p12", "name": "Binding Wire",         "unit": "roll",   "unit_price_kobo":  180000, "aliases": ["wire"],              "cluster": "solo"}
+  ]
+}
