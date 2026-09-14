@@ -20,7 +20,10 @@ let db: any = null;
 
 async function connect() {
   if (db) return db;
-  const { DatabaseSync } = await import("node:sqlite");
+  // webpackIgnore/turbopackIgnore: never bundle or trace node:sqlite. This backend is
+  // local-only; on a serverless build (Vercel) the tracer may not know the builtin,
+  // and Postgres is used there anyway. Left as a native runtime import.
+  const { DatabaseSync } = await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ "node:sqlite");
   const file = process.env.SAUTICE_DB || path.join(repoRoot(), "web", ".data", "sautice.db");
   fs.mkdirSync(path.dirname(file), { recursive: true });
   db = new DatabaseSync(file);
