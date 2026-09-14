@@ -112,15 +112,15 @@ Stated plainly so nothing here is mistaken for working software:
 
 | Component | Status |
 |---|---|
-| Money engine, naira number grammar | **Runs today**, 78 tests |
+| Money engine, naira number grammar | **Runs today**, 101 tests |
+| Invoice draft + clarification + confirmation + persistence | **Built and tested** (`src/sautice/invoice`, `web/src/lib/invoice`); see [invoice-flow.md](invoice-flow.md) |
+| Roster resolver | **Built** (`src/sautice/invoice/roster.py`) |
+| Web UI (record → review → invoice) | **Built**; recorder + review verified, invoice page rendered |
 | Speaker recorder, benchmark scenario set | **Runs today** |
 | Intron STT streaming | **Verified live** via `web/scripts/smoke-intron.mts` (real round trip) |
+| Extraction (transcript → structured intent) | Heuristic default (built); LLM/Groq path is an optional, unverified seam |
 | Intron TTS | Not verified |
-| Invoice engine, state machine | Not built |
-| Roster resolver | Not built |
-| Agent layer (Groq) | Not built |
 | Benchmark harness | Not built |
-| Web UI | Not built |
 
 ## Troubleshooting
 

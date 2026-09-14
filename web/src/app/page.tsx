@@ -10,6 +10,8 @@
  * and speaks the streaming protocol; this page only moves audio and renders state.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import DraftReview from "./DraftReview";
 
 type Phase = "idle" | "starting" | "recording" | "finalizing" | "done" | "error";
 
@@ -48,6 +50,8 @@ export default function Home() {
   const [level, setLevel] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [meta, setMeta] = useState<string | null>(null);
+  const [flow, setFlow] = useState<"transcript" | "review" | "issued">("transcript");
+  const [issued, setIssued] = useState<{ id: string; number: string } | null>(null);
 
   const phaseRef = useRef<Phase>(phase);
   useEffect(() => { phaseRef.current = phase; }, [phase]);
@@ -93,6 +97,7 @@ export default function Home() {
 
   const start = useCallback(async () => {
     setError(""); setPartial(""); setFinalText(""); setMeta(null); setElapsed(0);
+    setFlow("transcript"); setIssued(null);
     setPhase("starting");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -249,19 +254,42 @@ export default function Home() {
 
         {error ? (
           <div className="sr-error" role="alert">{error}</div>
-        ) : (
-          <div className="sr-transcript" aria-live="polite">
-            {finalText ? (
-              <>
-                <span className="sr-badge sr-badgeFinal">Final</span>{" "}
-                {finalText}
-              </>
-            ) : partial ? (
-              <span className="sr-partial">{partial}</span>
-            ) : (
-              <span className="sr-placeholder">Your transcript will appear here.</span>
-            )}
+        ) : flow === "issued" && issued ? (
+          <div className="rev">
+            <div className="sr-transcript">
+              <span className="sr-badge sr-badgeFinal">Issued</span>{" "}
+              Invoice <strong>{issued.number}</strong> is ready.
+            </div>
+            <div className="sr-controls">
+              <Link className="sr-btn sr-primary" href={`/invoice/${issued.id}`}>Open invoice {issued.number}</Link>
+            </div>
           </div>
+        ) : flow === "review" && finalText ? (
+          <DraftReview
+            transcript={finalText}
+            onIssued={(id, number) => { setIssued({ id, number }); setFlow("issued"); }}
+            onCancel={() => setFlow("transcript")}
+          />
+        ) : (
+          <>
+            <div className="sr-transcript" aria-live="polite">
+              {finalText ? (
+                <>
+                  <span className="sr-badge sr-badgeFinal">Final</span>{" "}
+                  {finalText}
+                </>
+              ) : partial ? (
+                <span className="sr-partial">{partial}</span>
+              ) : (
+                <span className="sr-placeholder">Your transcript will appear here.</span>
+              )}
+            </div>
+            {finalText && phase === "done" && (
+              <div className="sr-controls">
+                <button className="sr-btn sr-primary" onClick={() => setFlow("review")}>Review &amp; create invoice</button>
+              </div>
+            )}
+          </>
         )}
       </main>
 

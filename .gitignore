@@ -26,3 +26,9 @@ fixtures/*.wav
 *.db
 .DS_Store
 incoming/
+
+# invoice store (local SQLite) and generated assets
+*.db
+*.db-wal
+*.db-shm
+web/.data/
