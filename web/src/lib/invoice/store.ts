@@ -16,9 +16,17 @@ let storePromise: Promise<Store> | null = null;
 
 function getStore(): Promise<Store> {
   if (!storePromise) {
-    storePromise = PG_URL
-      ? import("./store/pg").then((m) => m.pgStore)
-      : import("./store/sqlite").then((m) => m.sqliteStore);
+    if (!PG_URL && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
+      // Serverless has no writable disk for SQLite. Fail with a clear message instead
+      // of a cryptic filesystem error, so whoever configures the deploy sees the fix.
+      storePromise = Promise.reject(
+        new Error("No database configured. Add a Postgres database and set DATABASE_URL / POSTGRES_URL (see docs/deploy-vercel.md)."),
+      );
+    } else {
+      storePromise = PG_URL
+        ? import("./store/pg").then((m) => m.pgStore)
+        : import("./store/sqlite").then((m) => m.sqliteStore);
+    }
   }
   return storePromise;
 }
