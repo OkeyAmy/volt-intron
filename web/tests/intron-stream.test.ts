@@ -290,3 +290,105 @@ describe("robustness", () => {
     expect((await expectReject(p)).code).toBe("ABORTED");
   });
 });
+
+describe("opt-in reconnect (pre-session retry)", () => {
+  it("reconnects before SESSION_CREATED, at most maxAttempts times, then succeeds", async () => {
+    vi.useFakeTimers();
+    const sockets: FakeSocket[] = [];
+    const factory: WsFactory = (() => {
+      const s = new FakeSocket();
+      sockets.push(s);
+      return s as unknown as WebSocketLike;
+    }) as WsFactory;
+
+    const p = transcribeStream(Buffer.alloc(2048, 1), {
+      apiKey: KEY, language: "pcm", wsFactory: factory, maxAttempts: 3,
+    });
+
+    sockets[0].fireOpen();
+    sockets[0].fireError("upstream hiccup");
+    await vi.advanceTimersByTimeAsync(200); // backoff -> attempt 2
+    expect(sockets.length).toBe(2);
+
+    sockets[1].fireOpen();
+    sockets[1].fireClose(1006, "burst");
+    await vi.advanceTimersByTimeAsync(400); // backoff -> attempt 3
+    expect(sockets.length).toBe(3);
+
+    sockets[2].fireOpen();
+    sockets[2].fireMessage({ message_type: "SESSION_CREATED", session_id: "s", credit_balance: 1 });
+    sockets[2].fireMessage({ message_type: "COMMITTED_TRANSCRIPT", transcript_text: "recovered" });
+    await expect(p).resolves.toMatchObject({ transcript: "recovered" });
+  });
+
+  it("surfaces CLOSED_EARLY once pre-session attempts are exhausted", async () => {
+    vi.useFakeTimers();
+    const sockets: FakeSocket[] = [];
+    const factory: WsFactory = (() => {
+      const s = new FakeSocket();
+      sockets.push(s);
+      return s as unknown as WebSocketLike;
+    }) as WsFactory;
+
+    const p = transcribeStream(Buffer.alloc(2048, 1), {
+      apiKey: KEY, language: "pcm", wsFactory: factory, maxAttempts: 2,
+    });
+
+    sockets[0].fireOpen();
+    sockets[0].fireClose(1006, "");
+    await vi.advanceTimersByTimeAsync(200);
+    sockets[1].fireOpen();
+    sockets[1].fireClose(1006, "");
+    const err = await expectReject(p);
+    expect(err.code).toBe("CLOSED_EARLY");
+    expect(err.detail.closeCode).toBe(1006);
+  });
+
+  it("does not retry a failure that happens after the session exists", async () => {
+    vi.useFakeTimers();
+    const sockets: FakeSocket[] = [];
+    const factory: WsFactory = (() => {
+      const s = new FakeSocket();
+      sockets.push(s);
+      return s as unknown as WebSocketLike;
+    }) as WsFactory;
+
+    const p = transcribeStream(Buffer.alloc(2048, 1), {
+      apiKey: KEY, language: "pcm", wsFactory: factory, maxAttempts: 3,
+    });
+    sockets[0].fireOpen();
+    sockets[0].fireMessage({ message_type: "SESSION_CREATED", session_id: "s", credit_balance: 1 });
+    sockets[0].fireClose(1006, "abnormal closure");
+    const err = await expectReject(p);
+    expect(err.code).toBe("CLOSED_EARLY");
+    expect(sockets.length).toBe(1);
+  });
+});
+
+describe("opt-in pacing (whole-utterance clients)", () => {
+  it("releases one frame at a time and defers COMMIT until the queue drains", async () => {
+    vi.useFakeTimers();
+    const { factory, socket } = withSocket();
+    // 40KB > MAX_CHUNK (32KB), so flush produces at least two frames.
+    const p = transcribeStream(Buffer.alloc(40000, 1), {
+      apiKey: KEY, language: "pcm", wsFactory: factory, paceMs: 100,
+    });
+
+    socket().fireOpen();
+    socket().fireMessage({ message_type: "SESSION_CREATED", session_id: "s", credit_balance: 1 });
+
+    // First frame goes out immediately; the second and the COMMIT are queued.
+    expect(socket().chunks().length).toBe(1);
+    expect(socket().commits().length).toBe(0);
+
+    await vi.advanceTimersByTimeAsync(100);
+    expect(socket().chunks().length).toBe(2);
+    expect(socket().commits().length).toBe(0);
+
+    await vi.advanceTimersByTimeAsync(100);
+    expect(socket().commits().length).toBe(1);
+
+    socket().fireMessage({ message_type: "COMMITTED_TRANSCRIPT", transcript_text: "paced" });
+    await expect(p).resolves.toMatchObject({ transcript: "paced" });
+  });
+});

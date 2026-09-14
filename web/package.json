@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tsx server.mts",
+    "dev": "tsx --env-file=../.env server.mts",
     "build": "next build",
-    "start": "NODE_ENV=production tsx server.mts",
+    "start": "NODE_ENV=production tsx --env-file=../.env server.mts",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "smoke:intron": "tsx scripts/smoke-intron.mts"
+    "smoke:intron": "tsx --env-file=../.env scripts/smoke-intron.mts"
   },
   "dependencies": {
     "groq-sdk": "^1.6.0",

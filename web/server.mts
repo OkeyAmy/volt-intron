@@ -97,7 +97,7 @@ function onVoiceSocket(ws: WebSocket, language: ReturnType<typeof parseLanguage>
   let bytesReceived = 0;
   let closed = false;
 
-  const session = new IntronStreamSession({ apiKey, language }, (event) => {
+  const session = new IntronStreamSession({ apiKey, language, paceMs: 50, maxAttempts: 3 }, (event) => {
     send(event);
     if (event.type === "final" || event.type === "error") ws.close();
   });

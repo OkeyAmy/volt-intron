@@ -45,6 +45,8 @@ for (const lang of langs as LanguageCode[]) {
     const r = await transcribeStream(pcm, {
       apiKey: apiKey as string,
       language: lang,
+      paceMs: 50,
+      maxAttempts: 3,
       onOpen: (s) => console.log(`  session ${s.sessionId.slice(0, 8)}…  credits ${s.creditBalance}`),
       onPartial: (t) => console.log(`  partial: ${t}`),
     });

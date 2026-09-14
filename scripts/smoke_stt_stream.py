@@ -1,10 +1,26 @@
 """Day-0 smoke test: Intron streaming STT. Verifies protocol, latency, language codes."""
-import asyncio, base64, json, os, sys, time, wave
+import asyncio, base64, json, os, pathlib, sys, time, wave
 import numpy as np, soundfile as sf, httpx, websockets
+
+def _seed_env_from_dotenv():
+    """Load the repo-root .env so the script runs without manual `set -a; . ./.env`."""
+    dotenv = pathlib.Path(__file__).resolve().parent.parent / ".env"
+    if not dotenv.exists():
+        return
+    for line in dotenv.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+_seed_env_from_dotenv()
 
 # INTRON_API_KEY is the documented name; API_KEY is accepted so an existing
 # .env from early exploration keeps working.
-KEY = os.environ.get("INTRON_API_KEY") or os.environ["API_KEY"]
+KEY = os.environ.get("INTRON_API_KEY") or os.environ.get("API_KEY")
+if not KEY:
+    sys.exit("No API key: set INTRON_API_KEY in the repo-root .env file and retry.")
 WS = "wss://infer.voice.intron.io/stt/v1/stream"
 
 def to_pcm16_16k_mono(path: str) -> bytes:

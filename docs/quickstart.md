@@ -75,13 +75,16 @@ Get an Intron key at <https://voice.intron.io/v2/developers>, and a Groq key at
 ## 5. Verify your Intron key end to end
 
 ```bash
-set -a; . ./.env; set +a
 uv run python scripts/smoke_stt_stream.py fixtures/smoke_pidgin.wav pcm en
 ```
 
 This opens a real streaming WebSocket, sends PCM16 audio, and prints the partial and final
 transcripts plus your remaining credit balance. It transcribes the same clip twice under two
 different language codes, which is how the finding in [`research.md`](research.md) was discovered.
+
+The scripts load `.env` themselves (the Python one with a tiny stdlib loader, the TS one via
+`tsx --env-file`), so no manual `export` is needed — and if the key is missing they fail with a
+clear `set INTRON_API_KEY` message instead of a bare `KeyError`.
 
 > Costs roughly 2 credits per run (~0.44 credits per second of audio).
 
@@ -126,7 +129,7 @@ Stated plainly so nothing here is mistaken for working software:
 
 | Symptom | Cause |
 |---|---|
-| `KeyError: 'API_KEY'` | `.env` not loaded. Run `set -a; . ./.env; set +a` first. |
+| `set INTRON_API_KEY` error | `.env` missing or the key isn't set. Both smoke scripts load `.env` automatically and exit with a clear message. |
 | Smoke test returns HTTP 403 | Key rejected. The message is `permission denied,access-key error`. |
 | Smoke test returns HTTP 500 | Auth **succeeded**; the resource is missing. Undocumented but expected. |
 | `QUOTA_EXCEEDED` on the socket | Intron credits exhausted. |

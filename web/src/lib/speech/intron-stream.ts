@@ -89,6 +89,20 @@ export interface StreamOptions {
   deadlines?: Partial<Deadlines>;
   /** Inject a WebSocket implementation. Defaults to `ws`; tests pass a fake. */
   wsFactory?: WsFactory;
+  /**
+   * Reconnect up to this many times before the service confirms SESSION_CREATED.
+   * Pre-session failures cost no credits, and the upstream is measurably flaky at
+   * connect time, so a retrying client is materially more reliable. Post-session
+   * failures are never retried. Default 1 (no reconnect).
+   */
+  maxAttempts?: number;
+  /**
+   * Release upstream audio frames one every `paceMs` instead of in a burst, and
+   * delay COMMIT until the queue drains. Set for clients that hand the whole
+   * utterance over at once; the upstream drops frames under a sudden burst.
+   * Default 0 (no pacing, identical to the original behaviour).
+   */
+  paceMs?: number;
 }
 
 export interface StreamResult {
@@ -192,7 +206,7 @@ function decodeReason(reason: unknown): string {
  * packetisation, tail handling, deadlines and terminal-state logic.
  */
 class SessionCore {
-  private ws: WebSocketLike;
+  private ws!: WebSocketLike;
   private deadlines: Deadlines;
 
   private pending: Buffer[] = [];
@@ -216,29 +230,81 @@ class SessionCore {
 
   private timers = new Set<ReturnType<typeof setTimeout>>();
 
+  /**
+   * Paced send queue. When `paceMs > 0`, audio frames are released one every
+   * `paceMs` instead of in a burst, and COMMIT is deferred until the queue
+   * drains. The upstream drops sessions fed a whole utterance at once; a real
+   * recorder trickles audio in but test clients may not.
+   */
+  private sendQueue: string[] = [];
+  private draining = false;
+  private commitPending = false;
+
+  /** Upstream sockets created so far; used to bound pre-session reconnects. */
+  private attempts = 0;
+  private readonly maxAttempts: number;
+  private readonly paceMs: number;
+
   constructor(
     private url: string,
     private headers: Record<string, string>,
     deadlines: Partial<Deadlines> | undefined,
-    wsFactory: WsFactory,
+    private wsFactory: WsFactory,
     private handlers: {
       onOpen?: (s: { sessionId: string; creditBalance: number }) => void;
       onPartial?: (text: string) => void;
       onFinal: (r: StreamResult) => void;
       onError: (e: IntronStreamError) => void;
     },
+    maxAttempts = 1,
+    paceMs = 0,
   ) {
     this.deadlines = { ...DEFAULT_DEADLINES, ...deadlines };
-    this.ws = wsFactory(url, { headers });
+    this.maxAttempts = maxAttempts;
+    this.paceMs = paceMs;
+    this.beginAttempt();
+  }
+
+  /**
+   * Open the upstream socket for one attempt. Audio already queued in `pending`
+   * survives a reconnect: nothing was delivered to a session that never started.
+   */
+  private beginAttempt(): void {
+    this.attempts++;
+    this.ready = false;
+    this.stage = "connecting";
+    this.ackId = 0;
+    this.sendQueue = [];
+    this.draining = false;
+    this.commitPending = false;
+
+    this.ws = this.wsFactory(this.url, { headers: this.headers });
 
     this.armTimer(this.deadlines.connectMs, () =>
-      this.fail("CONNECT_TIMEOUT", "timed out before the connection opened", { recoverable: true }));
+      this.maybeRetry("CONNECT_TIMEOUT", "timed out before the connection opened", { recoverable: true }));
 
     this.ws.on("open", () => this.onOpen());
     this.ws.on("message", (data) => this.onMessage(toStringData(data)));
     this.ws.on("error", (err) =>
-      this.fail("SOCKET_ERROR", err?.message || "socket error", { recoverable: true }));
+      this.maybeRetry("SOCKET_ERROR", err?.message || "socket error", { recoverable: true }));
     this.ws.on("close", (code, reason) => this.onClose(code, decodeReason(reason)));
+  }
+
+  /**
+   * Reconnect policy: failures before SESSION_CREATED cost nothing (no session was
+   * billed), and the upstream is measurably flaky at connect time (it occasionally
+   * sends a frame Node's `ws` cannot parse, which Py's parser tolerates). So retry
+   * up to `maxAttempts` while pre-ready, then surface the real error. A failure
+   * after the session exists is never retried.
+   */
+  private maybeRetry(
+    code: string,
+    message: string,
+    detail: { recoverable?: boolean; providerEvent?: string; closeCode?: number; closeReason?: string },
+  ): void {
+    if (this.settled) return;
+    if (this.ready || this.attempts >= this.maxAttempts) { this.fail(code, message, detail); return; }
+    this.armTimer(200 * this.attempts, () => { if (!this.settled) this.beginAttempt(); });
   }
 
   private armTimer(ms: number, fn: () => void): void {
@@ -258,7 +324,7 @@ class SessionCore {
     this.clearTimers(); // connect deadline met
     this.stage = "awaiting_ready";
     this.armTimer(this.deadlines.readyMs, () =>
-      this.fail("READY_TIMEOUT", "the service did not create a session in time", { recoverable: true }));
+      this.maybeRetry("READY_TIMEOUT", "the service did not create a session in time", { recoverable: true }));
     // Deliberately do NOT send audio here: wait for SESSION_CREATED.
   }
 
@@ -303,8 +369,21 @@ class SessionCore {
     this.stage = "draining";
     this.flush(true);            // send every remaining sample, tail preserved
     this.commitSent = true;
+    if (this.paceMs > 0) {
+      // Whole-utterance clients dump everything at once; without pacing the burst
+      // trips the upstream's frame handler. Release paced, then commit last.
+      this.commitPending = true;
+      this.drain();
+    } else {
+      this.emitCommit();
+    }
+  }
+
+  /** Transmit the upstream COMMIT and start the final-wait deadline. */
+  private emitCommit(): void {
+    if (this.settled) return;
     this.commitAt = performance.now();
-    this.send({ message_type: "COMMIT" });
+    this.transmit(JSON.stringify({ message_type: "COMMIT" }));
     this.stage = "awaiting_final";
     this.armTimer(this.deadlines.finalizeMs, () =>
       this.fail("FINALIZE_TIMEOUT", "no final transcript arrived after the recording was committed", {
@@ -362,10 +441,41 @@ class SessionCore {
 
   private send(obj: Record<string, unknown>): void {
     if (this.settled) return;
+    const json = JSON.stringify(obj);
+    if (this.paceMs > 0) {
+      this.sendQueue.push(json);
+      this.drain();
+      return;
+    }
+    this.transmit(json);
+  }
+
+  private transmit(json: string): void {
+    if (this.settled) return;
     if (this.ws.readyState !== WS_OPEN) return;
-    this.ws.send(JSON.stringify(obj), (err) => {
+    this.ws.send(json, (err) => {
       if (err && !this.settled) this.fail("SEND_FAILED", err.message, { recoverable: true });
     });
+  }
+
+  /** Release queued frames one per `paceMs`. COMMIT fires once the queue is empty. */
+  private drain(): void {
+    if (this.settled) return;
+    if (this.sendQueue.length === 0) {
+      if (this.commitPending) {
+        this.commitPending = false;
+        this.emitCommit();
+      }
+      return;
+    }
+    if (this.draining) return;
+    this.draining = true;
+    this.transmit(this.sendQueue.shift()!);
+    const t = setTimeout(() => {
+      this.draining = false;
+      this.drain();
+    }, this.paceMs);
+    (t as unknown as { unref?: () => void }).unref?.();
   }
 
   private onMessage(raw: string): void {
@@ -419,8 +529,9 @@ class SessionCore {
 
   private onClose(code: number, reason: string): void {
     if (this.settled) return;
-    // A close before a final transcript is a real failure. Preserve what happened.
-    this.fail("CLOSED_EARLY", "the connection closed before a transcript was committed", {
+    // A close before a final transcript is a real failure. Pre-session it is also a
+    // cheap reconnect point; post-session it is terminal. Preserve what happened.
+    this.maybeRetry("CLOSED_EARLY", "the connection closed before a transcript was committed", {
       recoverable: true,
       closeCode: code,
       closeReason: reason,
@@ -470,7 +581,7 @@ export function transcribeStream(pcm16: Buffer, opts: StreamOptions): Promise<St
       onPartial: opts.onPartial,
       onFinal: (r) => { opts.signal?.removeEventListener("abort", onAbort); resolve(r); },
       onError: (e) => { opts.signal?.removeEventListener("abort", onAbort); reject(e); },
-    });
+    }, opts.maxAttempts, opts.paceMs);
 
     if (opts.signal?.aborted) { core.cancel(); return; }
     opts.signal?.addEventListener("abort", onAbort, { once: true });
@@ -503,7 +614,7 @@ export class IntronStreamSession {
   private core: SessionCore;
 
   constructor(
-    opts: { apiKey: string; language: LanguageCode; sampleRate?: number; deadlines?: Partial<Deadlines>; wsFactory?: WsFactory },
+    opts: { apiKey: string; language: LanguageCode; sampleRate?: number; deadlines?: Partial<Deadlines>; wsFactory?: WsFactory; maxAttempts?: number; paceMs?: number },
     private emit: (e: SessionEvent) => void,
   ) {
     const url = buildUrl(opts.language, opts.sampleRate ?? 16000);
@@ -513,7 +624,7 @@ export class IntronStreamSession {
       onPartial: (text) => emit({ type: "partial", text }),
       onFinal: (result) => emit({ type: "final", result }),
       onError: (e) => emit({ type: "error", code: e.code, message: e.message, detail: e.detail }),
-    });
+    }, opts.maxAttempts, opts.paceMs);
   }
 
   /** Queue PCM16 audio. Safe to call before the socket has opened. */

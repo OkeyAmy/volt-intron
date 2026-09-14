@@ -12,6 +12,79 @@ category *Fintech, Telco & Customer Experience*
 
 ---
 
+## Getting started
+
+Two parts, one repo: the **financial core** (Python — offline, testable by anyone with no
+credentials) and the **voice web app** (TypeScript — needs an Intron key for live speech).
+For full detail, start at [`docs/quickstart.md`](docs/quickstart.md).
+
+### Requirements
+
+- [`uv`](https://docs.astral.sh/uv/) for Python — it installs Python 3.12 itself (pinned in
+  `.python-version`; your system Python may be newer).
+- [`pnpm`](https://pnpm.io/) and **Node.js ≥ 20.9** for the web app.
+
+### 1. Financial core — no keys required
+
+```bash
+uv sync
+uv run pytest          # 78 passed — money engine + naira number grammar, fully offline
+```
+
+Run the number-grammar demo that shows it **refusing to guess** (see `docs/quickstart.md §3` for the
+full snippet and output):
+
+```bash
+uv run python -c "
+from sautice.nlp.naira import read_amount
+for s in ['two fifty', 'twelve-five', 'twenty five thousand naira']:
+    print(s, '->', read_amount(s).format() if not read_amount(s).is_ambiguous else 'ambiguous - asks the user')
+"
+```
+
+### 2. Voice web app — requires `INTRON_API_KEY`
+
+```bash
+cp .env.example .env   # then paste your Intron key in
+cd web
+pnpm install
+pnpm dev               # http://localhost:3000
+```
+
+`pnpm dev` runs [`web/server.mts`](web/server.mts): a custom server hosting Next.js **and** the
+WebSocket voice gateway on one port. The gateway lives at `/api/voice/stream`, and if it cannot see
+a key it says so in an error message rather than failing silently. The server loads the repo-root
+`.env` automatically (`tsx --env-file`), so no manual `export` is needed; in dev it auto-allows
+`http://localhost:3000` in its origin allowlist (production uses `APP_URL`).
+
+Other web commands:
+
+| Command | What it does |
+|---|---|
+| `pnpm smoke:intron <file.wav> <lang...>` | Real Intron streaming round trip from TypeScript |
+| `pnpm test` · `pnpm typecheck` · `pnpm lint` | Vitest (24), `tsc --noEmit`, ESLint |
+| `pnpm build` + `pnpm start` | Production build behind the same custom server |
+
+The Python equivalent of the smoke test is
+`uv run python scripts/smoke_stt_stream.py <file.wav> pcm en` — it transcribes one clip under two
+language codes and reports your remaining credit balance. Both smoke scripts read the repo-root
+`.env` automatically (the TS one via `--env-file`, the Python one with a tiny loader), and both fail
+with a clear *"set INTRON_API_KEY"* message instead of a crash if the key is missing.
+
+### 3. Credentials
+
+| Variable | Needed for |
+|---|---|
+| `INTRON_API_KEY` | All live speech (STT + TTS) — the only key the web app needs today |
+| `GROQ_API_KEY`, `GROQ_MODEL` | The agent extraction layer — **not yet wired in** |
+| `GEMINI_API_KEY`, `OPENAI_API_KEY` | Comparison models for the benchmark only |
+
+Intron keys: <https://voice.intron.io/v2/developers> · Groq keys: <https://console.groq.com/keys>.
+`.env` is gitignored — never commit it. `DEMO_MODE=true` in the example is a placeholder; nothing
+reads it yet.
+
+---
+
 ## The problem
 
 A Nigerian trader selling cement does not speak the way invoicing software expects. They say
@@ -152,7 +225,7 @@ Honest separation of what runs today from what is still being built.
 | Tenant-scoped entity resolver | Not built |
 | Agent layer (Groq) | Not built |
 | Benchmark harness and results | Not built |
-| Web UI | Not built |
+| Web app — Next.js + voice gateway | **Gateway live** at `/api/voice/stream`; UI in progress |
 
 `uv run pytest` → **78 passed**, with no network and no credentials.
 
