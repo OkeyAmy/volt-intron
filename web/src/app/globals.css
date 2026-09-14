@@ -1,26 +1,147 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* Sautice design tokens (synced from design/tokens.css, the source of truth). */
+@import "./tokens.css";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ---- Sautice recorder (sr-) : global, namespaced to avoid Tailwind CSS-module friction ---- */
+.sr-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--s5) var(--s4) var(--s7);
+  gap: var(--s5);
 }
+
+.sr-card {
+  width: 100%;
+  max-width: var(--measure);
+  background: var(--leaf);
+  border: 1px solid var(--carbon);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  padding: var(--s6) var(--s5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+.sr-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  color: var(--ink);
+}
+.sr-brand svg { width: 34px; height: 34px; }
+.sr-wordmark { font-size: var(--t-xl); font-weight: 700; letter-spacing: -0.01em; }
+.sr-tagline { color: var(--ink-soft); font-size: var(--t-sm); margin: 0; line-height: var(--lh-body); }
+
+.sr-row { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.sr-label { font-size: var(--t-sm); color: var(--ink-soft); }
+
+.sr-select {
+  font: inherit;
+  font-size: var(--t-sm);
+  color: var(--ink);
+  background: var(--leaf);
+  border: 1px solid var(--carbon);
+  border-radius: var(--r-sm);
+  padding: var(--s2) var(--s3);
+}
+.sr-select:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+.sr-controls { display: flex; gap: var(--s3); align-items: center; flex-wrap: wrap; }
+
+.sr-btn {
+  font: inherit;
+  font-weight: 600;
+  font-size: var(--t-md);
+  border-radius: var(--r-md);
+  padding: var(--s3) var(--s5);
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.sr-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.sr-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.sr-primary { background: var(--ink); color: var(--leaf); }
+.sr-danger { background: var(--tally); color: #fff; }
+.sr-ghost { background: transparent; color: var(--ink); border-color: var(--carbon); }
+
+.sr-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--tally);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.sr-timer { font-variant-numeric: tabular-nums; color: var(--ink); font-size: var(--t-md); }
+
+.sr-meter {
+  height: 8px; width: 100%;
+  background: var(--carbon-dim);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.sr-meterFill {
+  height: 100%;
+  background: var(--settled);
+  border-radius: 999px;
+  transition: width 60ms linear;
+}
+
+.sr-status {
+  display: flex; align-items: center; gap: var(--s2);
+  font-size: var(--t-sm);
+  color: var(--ink-soft);
+  min-height: 1.2em;
+}
+
+.sr-transcript {
+  border-top: var(--rule-w) solid var(--carbon);
+  padding-top: var(--s4);
+  min-height: 4.5rem;
+  line-height: var(--lh-body);
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+.sr-partial { color: var(--ink-soft); font-style: italic; }
+.sr-placeholder { color: var(--ink-faint); }
+
+.sr-badge {
+  display: inline-block;
+  font-size: var(--t-xs);
+  padding: 2px var(--s2);
+  border-radius: 999px;
+  border: 1px solid var(--carbon);
+  color: var(--ink-soft);
+}
+.sr-badgeFinal { background: var(--settled-bg); color: var(--settled); border-color: transparent; }
+
+.sr-error {
+  background: var(--tally-bg);
+  color: var(--tally);
+  border-radius: var(--r-md);
+  padding: var(--s3) var(--s4);
+  font-size: var(--t-sm);
+  line-height: var(--lh-body);
+}
+
+.sr-meta { color: var(--ink-faint); font-size: var(--t-xs); font-variant-numeric: tabular-nums; }
+.sr-foot { color: var(--ink-faint); font-size: var(--t-xs); text-align: center; max-width: var(--measure); }
+

@@ -18,6 +18,13 @@ import { WebSocketServer, type WebSocket } from "ws";
 import { IntronStreamSession } from "./src/lib/speech/intron-stream.js";
 import { parseLanguage, isAllowedOrigin, originAllowlist, LIMITS } from "./src/lib/gateway/guards.js";
 
+// One documented env-loading strategy: read the repo-root `.env` then this app's
+// `web/.env`, so the gateway finds INTRON_API_KEY the same way whether started from
+// the repo root or from web/. A missing file is fine; the later load wins.
+for (const rel of ["../.env", "./.env"]) {
+  try { process.loadEnvFile(new URL(rel, import.meta.url)); } catch { /* optional */ }
+}
+
 const port = parseInt(process.env.PORT || "3000", 10);
 const dev = process.env.NODE_ENV !== "production";
 const VOICE_PATH = "/api/voice/stream";
