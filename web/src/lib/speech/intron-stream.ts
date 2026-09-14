@@ -304,7 +304,10 @@ class SessionCore {
   ): void {
     if (this.settled) return;
     if (this.ready || this.attempts >= this.maxAttempts) { this.fail(code, message, detail); return; }
-    this.armTimer(200 * this.attempts, () => { if (!this.settled) this.beginAttempt(); });
+    // Backoff grows 250ms -> 500ms -> 1000ms -> capped at 2000ms. Pre-session
+    // attempts never bill a session, so stretching the window is free insurance.
+    const backoff = Math.min(250 * 2 ** (this.attempts - 1), 2000);
+    this.armTimer(backoff, () => { if (!this.settled) this.beginAttempt(); });
   }
 
   private armTimer(ms: number, fn: () => void): void {

@@ -31,6 +31,11 @@ const MIC_ERRORS: Record<string, string> = {
   SecurityError: "Recording needs a secure (https) page. You can type your invoice details instead.",
 };
 
+// How many gateway connections one recording will tolerate before giving up. Each
+// failed pre-session connect costs nothing (no session was billed), so transparently
+// reconnecting keeps the recording alive through the upstream's own hiccups.
+const MAX_GENS = 3;
+
 const STATUS: Record<Phase, string> = {
   idle: "",
   starting: "Getting ready…",
@@ -84,6 +89,9 @@ export default function Home() {
   const nodeRef = useRef<AudioWorkletNode | null>(null);
   const queueRef = useRef<ArrayBuffer[]>([]);
   const openRef = useRef(false);
+  const intronReadyRef = useRef(false);
+  const gensRef = useRef(0);
+  const commitPendingRef = useRef(false);
   const startedAtRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -102,6 +110,9 @@ export default function Home() {
   const closeAll = useCallback(() => {
     teardownAudio();
     openRef.current = false;
+    intronReadyRef.current = false;
+    gensRef.current = 0;
+    commitPendingRef.current = false;
     queueRef.current = [];
     const ws = wsRef.current;
     wsRef.current = null;
@@ -116,10 +127,101 @@ export default function Home() {
     closeAll();
   }, [closeAll]);
 
+  const [reconnectKey, setReconnectKey] = useState(0);
+  const languageRef = useRef(language);
+  useEffect(() => { languageRef.current = language; }, [language]);
+
+  /**
+   * Open (or transparently re-open) the gateway WebSocket for the current
+   * recording. Called once from `start()` and again when `reconnectKey` changes
+   * (the upstream failed BEFORE a session was confirmed - a pre-session failure
+   * bills nothing, so replaying the audio costs nothing). The live language is
+   * read through `languageRef` so a stale closure can't freeze an old selection
+   * into a reconnect.
+   */
+  const openGateway = useCallback(() => {
+    intronReadyRef.current = false;
+    openRef.current = false; // the new socket is not writable until its `open` fires
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(`${proto}//${location.host}/api/voice/stream?lang=${encodeURIComponent(languageRef.current)}`);
+    ws.binaryType = "arraybuffer";
+    const prior = wsRef.current;
+    wsRef.current = ws;
+    if (prior && prior.readyState <= WebSocket.OPEN) prior.close(); // retire a still-alive socket
+
+    // `torn` makes reconnect-once-per-generation: after we choose to reconnect,
+    // the eventual error/close events of this dead socket must not double up.
+    let torn = false;
+    const reconnect = () => {
+      if (torn) return;
+      torn = true;
+      gensRef.current += 1;
+      if (gensRef.current >= MAX_GENS) {
+        fail("The connection couldn't be established. Please record again or type the details.");
+        return;
+      }
+      // Let the reconnect effect below call openGateway in the next render.
+      setReconnectKey((k) => k + 1);
+    };
+
+    ws.onopen = () => {
+      openRef.current = true;
+      for (const buf of queueRef.current) ws.send(buf);
+      queueRef.current = [];
+      if (commitPendingRef.current) ws.send(JSON.stringify({ type: "commit" }));
+      startedAtRef.current = Date.now();
+      setPhase("recording");
+      timerRef.current = setInterval(() => setElapsed((Date.now() - startedAtRef.current) / 1000), 100);
+    };
+    ws.onmessage = (e) => {
+      let msg: Record<string, unknown>;
+      try { msg = JSON.parse(e.data); } catch { return; }
+      if (msg.type === "open") {
+        intronReadyRef.current = true; // a session exists now: this connect is billed
+        setMeta(`session ${(String(msg.sessionId ?? "")).slice(0, 8)}… · credits ${msg.creditBalance}`);
+      } else if (msg.type === "partial") {
+        setPartial(String(msg.text ?? ""));
+      } else if (msg.type === "final") {
+        const r = msg.result as { transcript?: string; msStopToFinal?: number | null; partialCount?: number };
+        setFinalText(r?.transcript ?? "");
+        setPartial("");
+        setMeta(`heard in ${Math.round((r?.msStopToFinal ?? 0) / 100) / 10}s`);
+        setPhase("done");
+        closeAll();
+      } else if (msg.type === "error") {
+        // Pre-session errors never billed a session, so ride through them by
+        // reconnecting; the audio kept arriving and will be replayed on open.
+        if (phaseRef.current === "recording" && !intronReadyRef.current) { reconnect(); return; }
+        fail(String(msg.message ?? "We couldn't use this recording. Please record again or type the details."));
+      }
+    };
+    ws.onerror = () => {
+      if (phaseRef.current === "recording" && !intronReadyRef.current) reconnect();
+      else if (phaseRef.current !== "done") fail("The connection stopped. Please record again or type the details.");
+    };
+    ws.onclose = () => {
+      if (phaseRef.current === "recording") {
+        if (!intronReadyRef.current) reconnect();
+        else fail("The connection stopped while we were still listening. Please record again or type the details.");
+      } else if (phaseRef.current === "finalizing") {
+        fail("The connection stopped before we got the text. Please record again or type the details.");
+      }
+    };
+  }, [fail, closeAll]);
+
+  // A reconnect bumps this key; the effect performs the actual re-open so the
+  // next render's `openGateway` (with fresh closures) does the work.
+  useEffect(() => {
+    if (reconnectKey > 0) openGateway();
+  }, [reconnectKey, openGateway]);
+
   const start = useCallback(async () => {
     setError(""); setPartial(""); setFinalText(""); setMeta(null); setElapsed(0);
     setFlow("compose"); setIssued(null); setTyping(false); setShareNote("");
     setPhase("starting");
+    gensRef.current = 0;
+    commitPendingRef.current = false;
+    setReconnectKey(0);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
@@ -138,10 +240,10 @@ export default function Home() {
         const d = e.data;
         if (d.type === "level") { setLevel(Math.min(1, d.value * 1.6)); return; }
         if (d.type === "audio") {
+          // Always keep the audio so a pre-session reconnect can replay it whole.
+          queueRef.current.push(d.buffer);
           if (openRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(d.buffer);
-          } else {
-            queueRef.current.push(d.buffer);
           }
         }
       };
@@ -151,51 +253,18 @@ export default function Home() {
       node.connect(sink);
       sink.connect(ctx.destination);
 
-      const proto = location.protocol === "https:" ? "wss:" : "ws:";
-      const ws = new WebSocket(`${proto}//${location.host}/api/voice/stream?lang=${encodeURIComponent(language)}`);
-      ws.binaryType = "arraybuffer";
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        openRef.current = true;
-        for (const buf of queueRef.current) ws.send(buf);
-        queueRef.current = [];
-        startedAtRef.current = Date.now();
-        setPhase("recording");
-        timerRef.current = setInterval(() => setElapsed((Date.now() - startedAtRef.current) / 1000), 100);
-      };
-      ws.onmessage = (e) => {
-        let msg: Record<string, unknown>;
-        try { msg = JSON.parse(e.data); } catch { return; }
-        if (msg.type === "open") {
-          setMeta(`session ${(String(msg.sessionId ?? "")).slice(0, 8)}… · credits ${msg.creditBalance}`);
-        } else if (msg.type === "partial") {
-          setPartial(String(msg.text ?? ""));
-        } else if (msg.type === "final") {
-          const r = msg.result as { transcript?: string; msStopToFinal?: number | null; partialCount?: number };
-          setFinalText(r?.transcript ?? "");
-          setPartial("");
-          setMeta(`heard in ${Math.round((r?.msStopToFinal ?? 0) / 100) / 10}s`);
-          setPhase("done");
-          closeAll();
-        } else if (msg.type === "error") {
-          fail(String(msg.message ?? "We couldn't use this recording. Please record again or type the details."));
-        }
-      };
-      ws.onerror = () => { if (phaseRef.current !== "done") fail("The connection stopped. Please record again or type the details."); };
-      ws.onclose = () => {
-        if (openRef.current && phaseRef.current === "recording") fail("The connection stopped. Please record again or type the details.");
-      };
+      openGateway();
     } catch (e) {
       const name = (e as Error).name;
       fail(MIC_ERRORS[name] ?? `Could not start recording: ${(e as Error).message}. You can type instead.`);
     }
-  }, [language, closeAll, fail]);
+  }, [openGateway, fail]);
 
   const stop = useCallback(() => {
     if (phaseRef.current !== "recording") return;
     teardownAudio();
     setPhase("finalizing");
+    commitPendingRef.current = true;
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({ type: "commit" }));
     }

@@ -307,12 +307,12 @@ describe("opt-in reconnect (pre-session retry)", () => {
 
     sockets[0].fireOpen();
     sockets[0].fireError("upstream hiccup");
-    await vi.advanceTimersByTimeAsync(200); // backoff -> attempt 2
+    await vi.advanceTimersByTimeAsync(250); // backoff -> attempt 2
     expect(sockets.length).toBe(2);
 
     sockets[1].fireOpen();
     sockets[1].fireClose(1006, "burst");
-    await vi.advanceTimersByTimeAsync(400); // backoff -> attempt 3
+    await vi.advanceTimersByTimeAsync(500); // backoff -> attempt 3
     expect(sockets.length).toBe(3);
 
     sockets[2].fireOpen();
@@ -336,7 +336,7 @@ describe("opt-in reconnect (pre-session retry)", () => {
 
     sockets[0].fireOpen();
     sockets[0].fireClose(1006, "");
-    await vi.advanceTimersByTimeAsync(200);
+    await vi.advanceTimersByTimeAsync(250);
     sockets[1].fireOpen();
     sockets[1].fireClose(1006, "");
     const err = await expectReject(p);
