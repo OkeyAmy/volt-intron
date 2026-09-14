@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 export default async function InvoicesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;
   const query = (q ?? "").trim();
-  const invoices = listInvoices({ q: query, limit: 200 });
+  const invoices = await listInvoices({ q: query, limit: 200 });
 
   return (
     <main className="page-main">

@@ -1,13 +1,14 @@
 /**
- * Server-only bridge to the Python invoice core.
+ * Invoice draft builder.
  *
- * The authoritative money and resolution logic lives in Python (src/sautice). Node
- * invokes it as a short-lived subprocess with a JSON request on stdin and reads a
- * JSON response on stdout. No shell, and no data in argv — so there is nothing to
- * interpolate. Bounded by a timeout and an output cap.
+ * The authoritative money and resolution logic lives in Python (src/sautice) and
+ * is faithfully ported to TypeScript under ./core, so this runs IN-PROCESS with no
+ * subprocess and no filesystem read. That is what lets the invoice API run on a
+ * serverless platform (Vercel), where spawning `python` and writing a SQLite file
+ * are both impossible. Parity with Python is checked in tests/invoice-parity.test.ts.
  */
-import { spawn } from "node:child_process";
-import path from "node:path";
+import type { Intent } from "./core/extract";
+import type { Selections } from "./core/executor";
 
 export interface DraftRequest {
   transcript?: string;
@@ -55,51 +56,20 @@ export interface BridgeResponse {
   error?: string;
 }
 
-const MAX_OUTPUT = 1024 * 1024;
-
-function repoRoot(): string {
-  if (process.env.SAUTICE_ROOT) return process.env.SAUTICE_ROOT;
-  const cwd = process.cwd();
-  return path.basename(cwd) === "web" ? path.dirname(cwd) : cwd;
-}
-
-export function runBridge(req: DraftRequest, opts: { timeoutMs?: number } = {}): Promise<BridgeResponse> {
-  const python = process.env.SAUTICE_PYTHON || "python";
-  const root = repoRoot();
-
-  return new Promise((resolve) => {
-    let child;
-    try {
-      // turbopackIgnore: this is a fixed command, not a dynamic import of app files;
-      // the annotation stops the bundler tracing source into the server output.
-      child = spawn(/* turbopackIgnore: true */ python, ["-m", "sautice.bridge"], {
-        cwd: root,
-        env: { ...process.env, PYTHONPATH: "src", PYTHONIOENCODING: "utf-8" },
-        windowsHide: true,
-      });
-    } catch (e) {
-      resolve({ ok: false, error: `bridge spawn failed: ${(e as Error).message}` });
-      return;
-    }
-
-    let out = "";
-    let err = "";
-    let settled = false;
-    const done = (r: BridgeResponse) => { if (!settled) { settled = true; clearTimeout(timer); resolve(r); } };
-
-    const timer = setTimeout(() => { child.kill(); done({ ok: false, error: "bridge timed out" }); }, opts.timeoutMs ?? 10_000);
-
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (d: string) => { out += d; if (out.length > MAX_OUTPUT) { child.kill(); done({ ok: false, error: "bridge output too large" }); } });
-    child.stderr.on("data", (d: string) => { err += d; });
-    child.on("error", (e: Error) => done({ ok: false, error: `bridge failed to run (${process.env.SAUTICE_PYTHON || "python"}): ${e.message}` }));
-    child.on("close", (code: number | null) => {
-      try { done(JSON.parse(out) as BridgeResponse); }
-      catch { done({ ok: false, error: (err.trim() || `bridge exited ${code} without valid JSON`).slice(0, 500) }); }
+/**
+ * Build a draft in-process. Async only to preserve the previous signature so the
+ * route handlers are unchanged; it does no I/O and cannot time out.
+ */
+export async function runBridge(req: DraftRequest): Promise<BridgeResponse> {
+  const { draftFromRequest } = await import("./core");
+  try {
+    return draftFromRequest({
+      transcript: req.transcript,
+      intent: req.intent as Intent | undefined,
+      selections: req.selections as Selections | undefined,
+      today: req.today,
     });
-
-    child.stdin.on("error", () => { /* the close/error handlers cover this */ });
-    child.stdin.end(JSON.stringify({ action: "draft", ...req }));
-  });
+  } catch (e) {
+    return { ok: false, error: `could not build a draft: ${(e as Error).message}` };
+  }
 }
