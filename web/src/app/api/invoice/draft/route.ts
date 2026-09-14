@@ -1,0 +1,44 @@
+/**
+ * Create or refine an invoice draft from a transcript. Refinement (with a draftId)
+ * re-runs the SAME transcript through the authoritative Python core with the
+ * reviewer's selections, and bumps the draft version.
+ */
+import { runBridge } from "@/lib/invoice/bridge";
+import { getDraft, saveNewDraft, updateDraft } from "@/lib/invoice/store";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+function lagosToday(): string {
+  // Explicit timezone: due dates are computed against the business's local day.
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos" }).format(new Date());
+}
+
+export async function POST(req: Request) {
+  let body: { transcript?: string; selections?: unknown; draftId?: string; intent?: unknown };
+  try { body = await req.json(); } catch { return Response.json({ ok: false, error: "invalid JSON body" }, { status: 400 }); }
+
+  const { transcript, selections, draftId, intent } = body ?? {};
+
+  let baseTranscript = transcript;
+  if (draftId) {
+    const existing = getDraft(draftId);
+    if (!existing) return Response.json({ ok: false, error: "draft not found" }, { status: 404 });
+    baseTranscript = existing.transcript ?? transcript; // re-resolve the same words
+  }
+  if (!baseTranscript && !intent) {
+    return Response.json({ ok: false, error: "transcript is required" }, { status: 400 });
+  }
+
+  const resp = await runBridge({ transcript: baseTranscript, intent, selections, today: lagosToday() });
+  if (!resp.ok || !resp.draft) {
+    return Response.json({ ok: false, error: resp.error ?? "could not build a draft" }, { status: 502 });
+  }
+
+  const row = draftId
+    ? updateDraft(draftId, { selections, draft: resp.draft })
+    : saveNewDraft({ transcript: baseTranscript ?? "", selections, draft: resp.draft });
+  if (!row) return Response.json({ ok: false, error: "draft not found" }, { status: 404 });
+
+  return Response.json({ ok: true, draftId: row.id, version: row.version, draft: row.draft });
+}

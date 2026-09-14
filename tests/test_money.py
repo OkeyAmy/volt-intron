@@ -93,6 +93,32 @@ class TestFormatting:
         # TTS is charged per character and is slow; keep it short and unambiguous.
         assert Money.from_naira("64500").spoken() == "64,500 naira"
 
+    def test_spoken_keeps_the_sign(self):
+        # A refund/discount line read aloud as a positive amount misstates the invoice.
+        assert Money.from_naira("-5").spoken() == "minus 5 naira"
+        assert (Money.zero() - Money.from_naira("500")).spoken() == "minus 500 naira"
+
+    def test_spoken_zero(self):
+        assert Money.zero().spoken() == "0 naira"
+
+
+class TestImmutability:
+    def test_field_cannot_be_reassigned(self):
+        m = Money.from_naira("10")
+        with pytest.raises(MoneyError, match="immutable"):
+            m.kobo = 999  # type: ignore[misc]
+        assert m.kobo == 1000  # unchanged
+
+    def test_field_cannot_be_deleted(self):
+        m = Money.from_naira("10")
+        with pytest.raises(MoneyError, match="immutable"):
+            del m.kobo  # type: ignore[misc]
+
+    def test_new_attributes_cannot_be_added(self):
+        m = Money.from_naira("10")
+        with pytest.raises(MoneyError):
+            m.note = "tampered"  # type: ignore[attr-defined]
+
 
 class TestEquality:
     def test_equal_amounts_are_equal(self):

@@ -37,6 +37,16 @@ class Money:
             raise MoneyError(f"kobo must be an int, got {type(kobo).__name__}")
         object.__setattr__(self, "kobo", kobo)
 
+    # --- immutability -----------------------------------------------------
+    # Without these, `m.kobo = 999` silently succeeds and breaks the hash/equality
+    # contract the class advertises. Construction uses object.__setattr__ above,
+    # which bypasses this guard by design.
+    def __setattr__(self, name: str, value: object) -> None:
+        raise MoneyError("Money is immutable; build a new one instead of assigning to it")
+
+    def __delattr__(self, name: str) -> None:
+        raise MoneyError("Money is immutable; its fields cannot be deleted")
+
     # --- construction -----------------------------------------------------
     @classmethod
     def zero(cls) -> "Money":
@@ -107,8 +117,13 @@ class Money:
         return f"{sign}₦{body}"
 
     def spoken(self) -> str:
-        """Short form for TTS. Intron charges per character and is slow, so keep it tight."""
-        return f"{self.format().lstrip('-₦')} naira"
+        """Short form for TTS. Intron charges per character and is slow, so keep it tight.
+
+        The sign is spoken, not dropped: a refund or discount line read aloud as a
+        positive amount would misstate the invoice.
+        """
+        sign = "minus " if self.kobo < 0 else ""
+        return f"{sign}{self.format().lstrip('-₦')} naira"
 
     # --- comparison -------------------------------------------------------
     def __eq__(self, other: object) -> bool:
