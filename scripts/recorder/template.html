@@ -81,6 +81,15 @@ audio { width:100%; margin-top:var(--s4); }
         <option value="ha-en">Hausa</option>
         <option value="en">English only</option>
       </select></label>
+    <label class="field"><span class="label">Where is your accent from?</span>
+      <select class="input" id="accent">
+        <option value="NG-south-west">Nigeria — South-West (e.g. Lagos, Ibadan)</option>
+        <option value="NG-south-east">Nigeria — South-East (e.g. Enugu, Onitsha)</option>
+        <option value="NG-south-south">Nigeria — South-South (e.g. Port Harcourt, Benin)</option>
+        <option value="NG-north">Nigeria — North (e.g. Kano, Kaduna, Abuja)</option>
+        <option value="NG-mixed">Nigeria — mixed or other</option>
+        <option value="outside-NG">Outside Nigeria</option>
+      </select></label>
     <label class="field"><span class="label">What are you recording on?</span>
       <select class="input" id="dev">
         <option>Android phone — built-in mic</option>
@@ -312,6 +321,8 @@ $('start').onclick = async () => {
   const ua = navigator.userAgent;
   const pick = (re, d) => (re.exec(ua) || [0, d])[1];
   meta = {speaker_id:SPEAKER_ID, language_pair:$('lang').value,
+          country:$('accent').value==='outside-NG' ? 'other' : 'NG', accent_region:$('accent').value,
+          domain:'commerce/invoicing', metadata_version:2,
           device:$('dev').value, environment:$('env').value,
           consent:{age18:true, research_use:true, public_hf:true, no_real_pii:true, withdrawable:true},
           consent_text_version:1, recorded_date:new Date().toISOString().slice(0,10),
