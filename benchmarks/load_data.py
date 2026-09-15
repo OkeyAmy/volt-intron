@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import random
 import shutil
@@ -287,7 +288,10 @@ def buckets_for(rows: list[dict], keyer, targets: dict) -> list[dict]:
     out = []
     for key, rs in groups.items():
         rs = [r for r in rs if MIN_SEC <= _row_dur(r) <= MAX_SEC]
-        rs.sort(key=lambda r: (_row_dur(r), random.Random(hash(r["text"] or "") % 2**32).random()))
+        # Ties on duration are common (many 3.07 s clips). Break them with a CONTENT hash:
+        # Python's built-in hash() of a str is salted per process (PYTHONHASHSEED), which
+        # made every rebuild pick and name different clips for the same ids.
+        rs.sort(key=lambda r: (_row_dur(r), hashlib.sha256((r["text"] or "").encode("utf-8")).hexdigest()))
         taken = rs[: targets.get("k", 1)]
         by_key[key] = len(taken)
         for r in taken:
