@@ -5,6 +5,7 @@
  * on idempotencyKey, so a double-click or retry never issues twice.
  */
 import { confirmDraft } from "@/lib/invoice/store";
+import { storeFailure } from "@/lib/api/errors";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -36,6 +37,6 @@ export async function POST(req: Request) {
     }
   } catch (e) {
     // The idempotency key means a retry is safe and returns the same invoice.
-    return Response.json({ ok: false, error: `Couldn't create the invoice. Please try again. (${(e as Error).message})` }, { status: 503 });
+    return storeFailure(e, "invoice/confirm", "Couldn't create the invoice. Please try again.");
   }
 }

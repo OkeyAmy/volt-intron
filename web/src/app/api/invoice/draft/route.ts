@@ -5,6 +5,7 @@
  */
 import { runBridge } from "@/lib/invoice/bridge";
 import { getDraft, saveNewDraft, updateDraft } from "@/lib/invoice/store";
+import { storeFailure } from "@/lib/api/errors";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
     return Response.json({ ok: true, draftId: row.id, version: row.version, draft: row.draft });
   } catch (e) {
     // Always answer with JSON (a store/DB hiccup must not become an empty 500 that
-    // the browser can't parse). The message is safe to show; retrying usually works.
-    return Response.json({ ok: false, error: `Couldn't save the draft. Please try again. (${(e as Error).message})` }, { status: 503 });
+    // the browser can't parse). The real error is logged, never sent.
+    return storeFailure(e, "invoice/draft", "Couldn't save the draft. Please try again.");
   }
 }
