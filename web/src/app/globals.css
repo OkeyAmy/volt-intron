@@ -277,3 +277,103 @@ body {
 
 /* ---- Voice degraded (streaming down, buffering for the file API) ---- */
 .sr-degraded { background: var(--query-bg); color: var(--query); border-radius: var(--r-md); padding: var(--s2) var(--s3); font-size: var(--t-sm); line-height: var(--lh-body); margin: 0; }
+/* ============================================================================
+   UX polish — built only from the existing tokens.
+   ========================================================================= */
+
+/* Buttons: links styled as buttons, hover states, sizes */
+.sr-btn { justify-content: center; text-decoration: none; min-height: 44px; transition: background 120ms ease, border-color 120ms ease; }
+.sr-primary:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 86%, var(--paper)); }
+.sr-ghost:hover:not(:disabled) { background: var(--carbon-dim); }
+.sr-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--danger-solid) 88%, #000); }
+.sr-btn-lg { min-height: 56px; font-size: var(--t-lg); padding: var(--s3) var(--s6); }
+.sr-btn-sm { min-height: 40px; font-size: var(--t-sm); padding: var(--s2) var(--s4); }
+.sr-select { min-height: 44px; }
+
+/* Card header */
+.sr-brand .sr-wordmark { margin: 0; }
+.sr-brand .sr-help-link { margin-left: auto; }
+
+/* Progress steps */
+.steps { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--s2); flex-wrap: wrap; }
+.step { display: inline-flex; align-items: center; gap: var(--s2); font-size: var(--t-sm); color: var(--ink-faint); }
+.step + .step::before { content: ""; width: 1.25rem; height: 1px; background: var(--edge); margin-right: var(--s1); }
+.step-n { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 1px solid var(--edge); font-size: var(--t-xs); font-weight: 600; font-variant-numeric: tabular-nums; }
+.step-current { color: var(--ink); font-weight: 600; }
+.step-current .step-n { background: var(--ink); color: var(--leaf); border-color: var(--ink); }
+.step-done { color: var(--settled); }
+.step-done .step-n { background: var(--settled-bg); color: var(--settled); border-color: transparent; }
+
+/* Start speaking */
+.voice-start { display: flex; flex-direction: column; align-items: stretch; gap: var(--s3); }
+.voice-start .sr-expect { margin: 0; text-align: center; }
+.voice-start .sr-linkbtn { align-self: center; }
+.lang-row { display: flex; align-items: center; justify-content: center; gap: var(--s3); flex-wrap: wrap; }
+
+/* Recording panel */
+.rec-panel { display: flex; flex-direction: column; gap: var(--s3); border: 1px solid var(--carbon); border-radius: var(--r-md); padding: var(--s4); background: var(--paper); }
+.rec-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); }
+.rec-live { display: inline-flex; align-items: center; gap: var(--s2); font-weight: 600; }
+.rec-panel .sr-timer { font-size: var(--t-xl); font-weight: 700; }
+.rec-panel .sr-meta { margin: 0; }
+.rec-panel .sr-transcript { border-top: 1px solid var(--carbon); padding-top: var(--s3); min-height: 3rem; }
+.rec-warn { margin: 0; color: var(--query); background: var(--query-bg); border-radius: var(--r-sm); padding: var(--s2) var(--s3); font-size: var(--t-sm); font-weight: 600; }
+.rec-working { display: flex; align-items: center; gap: var(--s3); font-weight: 600; min-height: 44px; }
+.spinner { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--carbon); border-top-color: var(--ink); animation: spin 800ms linear infinite; flex: 0 0 auto; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Text box hint: only useful with a keyboard */
+.kbd-hint { margin: 0; }
+@media (hover: none) { .kbd-hint { display: none; } }
+.sr-error:focus { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+/* Invoice created */
+.created-line { margin: 0; }
+.sr-created .sr-created-total { margin: 0; }
+.share-note { flex-basis: 100%; margin: 0; }
+
+/* Skeletons */
+.skel { display: block; background: var(--carbon-dim); border-radius: var(--r-sm); animation: skel 1.4s ease-in-out infinite; }
+.skel-line { height: 0.9rem; }
+.skel-block { height: 5rem; border-radius: var(--r-md); }
+.skel-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); padding: var(--s4); min-height: 56px; }
+.rev-skel { display: flex; flex-direction: column; gap: var(--s3); }
+@keyframes skel { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+/* Notices (store unavailable, errors, not found) */
+.notice { background: var(--leaf); border: 1px solid var(--carbon); border-left: 4px solid var(--query); border-radius: var(--r-lg); padding: var(--s5); display: flex; flex-direction: column; gap: var(--s3); box-shadow: var(--shadow); }
+.notice-h2 { font-size: var(--t-lg); margin: 0; }
+.notice-body { color: var(--ink-soft); margin: 0; line-height: var(--lh-body); }
+
+/* Invoices list */
+.page-headrow { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); flex-wrap: wrap; }
+.find-main { display: flex; flex-direction: column; gap: var(--s1); flex: 1 1 auto; min-width: 0; }
+.find-cust { overflow-wrap: anywhere; }
+.empty { align-items: center; text-align: center; border: 1px dashed var(--edge); border-radius: var(--r-lg); padding: var(--s6) var(--s4); gap: var(--s2); }
+.empty-title { font-size: var(--t-lg); font-weight: 600; margin: 0; }
+.empty .sr-expect { margin: 0 0 var(--s3); }
+
+/* Invoice sheet */
+.inv-actions { width: 100%; max-width: 48rem; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+.inv-actions-right { display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
+.inv-tablewrap { overflow-x: auto; }
+@media (max-width: 460px) {
+  .inv-sheet { padding: var(--s5) var(--s4); }
+  .inv-head, .inv-meta { flex-direction: column; }
+  .inv-title, .inv-right { text-align: left; }
+}
+
+.help-cta { align-self: flex-start; }
+
+/* Small screens: keep Create invoice in reach while scrolling the review */
+@media (max-width: 460px) {
+  .rev-create { position: sticky; bottom: 0; background: var(--leaf); padding-bottom: var(--s3); margin-inline: calc(var(--s4) * -1); padding-inline: var(--s4); box-shadow: 0 -8px 16px -12px rgba(22,35,63,.25); z-index: 1; }
+  .sr-controls > .sr-btn { flex: 1 1 auto; }
+  .steps { font-size: var(--t-xs); }
+  .app-nav { gap: 0; }
+  .app-navlink { padding: var(--s2); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner, .skel { animation: none; }
+}
