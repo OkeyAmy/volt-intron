@@ -8,7 +8,7 @@ RUN corepack enable
 WORKDIR /app
 
 # Install deps first for layer caching (devDeps included: build needs next/tsx).
-COPY web/package.json web/pnpm-lock.yaml ./
+COPY web/package.json web/pnpm-lock.yaml web/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
 # App source, then the production build. NODE_ENV=production is set AFTER install so

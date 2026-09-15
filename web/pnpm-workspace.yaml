@@ -1,6 +1,9 @@
+allowBuilds:
+  esbuild: set this to true or false
+  unrs-resolver: set this to true or false
 # pnpm 10+ blocks dependency build scripts by default and fails a frozen install
 # (e.g. in Docker/CI) when any are ignored. Allow the ones we actually need:
 # esbuild (used by tsx to run server.mts) and unrs-resolver (native oxc resolver).
-allowBuilds:
-  esbuild: true
-  unrs-resolver: true
+onlyBuiltDependencies:
+  - esbuild
+  - unrs-resolver
