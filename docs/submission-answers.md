@@ -48,8 +48,9 @@ language codes `yo`, `ig`, `ha` and `pcm`.
 ### Q5 · Does it use the Sahara APIs?
 
 **Yes.** Streaming STT at `wss://infer.voice.intron.io/stt/v1/stream` with
-`use_language_asr_input` set to a code-switched code, the file endpoint as a fallback, and Intron
-TTS for spoken replies. Verified working against the live API.
+`use_language_asr_input` set to a code-switched code, and the synchronous file endpoint
+(`/file/v1/upload/sync`) as a reliability fallback when the live socket drops. Both verified working
+against the live API in production.
 
 ---
 
@@ -64,17 +65,18 @@ The artefact is a financial document, not text.
 
 ### Q7 · Technical overview and tradeoffs (~250 words)
 
-Code-switched African ASR is roughly 35% WER — Intron publishes 34.3% for Sahara v2.5, and the
-AfriSwitch benchmark's best system averages 35.93%. So the engineering problem is not transcription.
-It is making a financial action safe on top of an unreliable transcript. Three decisions follow,
-each stated as constraint, decision and cost.
+Code-switched African ASR is hard: our own pilot puts Sahara at 16.4% WER overall but 38.9% on
+Nigerian Pidgin, and the two other models we tested fare worse on Nigerian speech (Whisper 66.9% on
+Nigerian-accented clips). So the engineering problem is not transcription — it is making a financial
+action safe on top of an unreliable transcript. Three decisions follow, each as constraint, decision,
+cost.
 
-**Deterministic financial core with a typed action boundary.** Groq's strict JSON-schema mode cannot
-be combined with tool-calling, which forced the safer shape: the model emits typed actions as data
-and a deterministic executor validates and applies them. The model never computes a total. Money is
-an integer count of kobo that rejects floats, because float arithmetic loses fractions of a kobo and
-produces totals nobody agreed to. The cost is autonomy — a novel request becomes a clarification
-rather than an improvisation.
+**No LLM in the money path — heuristic extraction with a typed action boundary.** A hallucinated
+quantity or price is a wrong invoice, so the deployed extractor is a deterministic parser that emits
+typed actions as data; a separate executor validates and applies them and computes every total. Money
+is an integer count of kobo that rejects floats, because float arithmetic loses fractions of a kobo.
+The cost is autonomy — a novel phrasing becomes a clarification, not an improvisation — which for
+money we consider the right trade.
 
 **Uncertainty-preserving confirmation.** Our parser returns one value or an ambiguity set, never an
 invented number. *"Two fifty"* yields ₦250, ₦2,500 and ₦250,000 and forces a question; *"twelve-five"*
@@ -101,11 +103,27 @@ financial action happens without confirmation.
 
 ---
 
+### Website / Solution URL
+`https://sautice-voice1.onrender.com` (live voice app; container host running the WS gateway + Neon Postgres)
+
+### Solution Description (short blurb)
+Sautice turns a Nigerian trader's spoken, code-switched sale into a confirmed invoice. Speak
+naturally in Yoruba/Igbo/Hausa/Pidgin mixed with English; Intron Sahara transcribes it, a
+deterministic core resolves your customer and products and computes the money exactly, asks about
+anything ambiguous, and issues a numbered invoice only after you confirm.
+
+### Benchmark headline (real pilot, 68 clips, 3 models incl. Sahara)
+Overall WER — **Sahara 16.4%**, ElevenLabs Scribe 17.0%, Whisper-large-v3-turbo 38.2%. Sahara leads
+on the hardest Nigerian categories: Pidgin 38.9% vs Whisper 77.9%; Nigerian-accented 18.5% vs Whisper
+66.9%. Zero catastrophic money errors across all models (the deterministic guard blocks bad transcripts
+instead of issuing a wrong invoice). Full report: `benchmarks/outputs/pilot/results.json`.
+
 ### Links
 
 | Field | Value |
 |---|---|
-| Demo video | *pending* — must show code-switching, ≤5 min, public or unlisted |
-| Benchmark report | *pending* — hosted PDF, max 3 pages |
-| Benchmark audio | *pending* — HuggingFace, consented and de-identified |
+| Website | https://sautice-voice1.onrender.com |
 | Code | https://github.com/OkeyAmy/volt-intron |
+| Demo video | **YOU must record** — ≤5 min, public/unlisted YouTube, must show code-switching (script: `docs/demo-script.md`) |
+| Benchmark report | PDF generated from real data → host on Drive ("anyone with link") — see `docs/benchmark-report.html` |
+| Benchmark audio (optional) | HuggingFace upload of the consented, de-identified pilot clips (optional) |
