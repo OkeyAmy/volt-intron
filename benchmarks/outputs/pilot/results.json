@@ -48,13 +48,13 @@
       },
       "ok_rate": 0.9265,
       "latency_s": {
-        "mean": 2.5293,
+        "mean": 2.511,
         "n": 68,
-        "ci95": 0.224,
-        "sd": 0.9425,
+        "ci95": 0.2268,
+        "sd": 0.9543,
         "median": 2.335,
         "q25": 1.977,
-        "q75": 2.8792
+        "q75": 2.8775
       },
       "latency_median": 2.335,
       "error_types": {
@@ -808,8 +808,8 @@
   },
   "committed_rows": 68,
   "methodology": {
-    "generated_at": "2026-09-15T23:04:27",
-    "git_commit": "84f5f841e9425f5b1e47822949a6eebbf309b714",
+    "generated_at": "2026-09-15T23:06:49",
+    "git_commit": "ccd75940bad23bac8ba939890049b147e92b5ab8",
     "python": "3.12.13",
     "platform": "Linux-6.19.10-300.fc44.x86_64-x86_64-with-glibc2.43",
     "deps": {
