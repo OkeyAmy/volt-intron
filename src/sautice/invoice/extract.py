@@ -37,13 +37,48 @@ _NUMWORD = (r"(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|
 # so the lead-in is not left behind as a bogus product line.
 _TERMS = re.compile(
     r"\b((?:(?:and\s+)?(?:make\s+(?:dem|dey|him|am|e|she|he|they|them)\s+)?"
-    r"(?:pay(?:ment)?|due)\s+(?:in|for|within|after|on|by)\s+)?"
+    r"(?:(?:pay(?:ment)?|due)\s+(?:in|for|within|after|on|by)\s+|next\s+|within\s+|in\s+))?"
     r"(?:net\s+\d+|\d+\s*days?|\d+\s*weeks?|"
     + _NUMWORD + r"(?:[\s-]+" + _NUMWORD + r")*\s+(?:days?|weeks?)|"
-    r"end of (?:the )?month|month end|on delivery|cash|upfront|immediately)\b.*)$",
+    r"end of (?:the |di |de )?month|month end|on delivery|cash|upfront|immediately)\b.*)$",
     re.I,
 )
 _EACH = re.compile(r"^(.+?)\s+(?:each|apiece|per\s+\w+)$", re.I)
+
+# --- customer phrasing -------------------------------------------------------
+# Speech recognition returns lowercase names ("send 5 bags to adebayo stores"), so
+# customer detection cannot rely on capitalisation. Every rule below needs an
+# explicit marker (a purchase verb, "to"/"for", or "invoice <name> for"), and the
+# captured phrase must contain no digits and must not start with a unit or filler
+# word — otherwise a product ("for cement") could be mistaken for a customer.
+_TITLE = r"(?:mr|mrs|ms|miss|madam|alhaji|alhaja|chief|oga|sir|dr|engr|pastor|mallam|malam)\.?\s+"
+# Lazy repetition: the SHORTEST name that still leaves a valid verb/marker wins, so
+# "Adebayo Stores wan buy ..." captures "Adebayo Stores" and leaves "wan buy" as the verb.
+_NAME = r"(?:[^\W\d_][\w&.'-]*(?:\s+[^\W\d_][\w&.'-]*){0,4}?)"
+_LEAD_IMPERATIVE = re.compile(
+    r"^\s*(?:send|put|give|add|record|create|make|raise|generate|prepare|enter|log|write|issue|bill|invoice)"
+    r"\s+(?:am\s+|dem\s+|out\s+|around\s+)?",
+    re.I,
+)
+_NOT_NAME_START = {
+    "each", "naira", "delivery", "days", "day", "weeks", "week", "cash", "credit",
+    "them", "dem", "me", "you", "him", "her", "us", "it", "the", "a", "an", "of",
+    "and", "at", "per", "apiece", "only", "am", "abeg", "out", "around", "bag",
+    "bags", "length", "lengths", "bucket", "buckets", "tin", "tins", "sheet",
+    "sheets", "trip", "trips", "roll", "rolls", "piece", "pieces", "pcs", "unit",
+    "units", "price", "list", "invoice", "receipt",
+}
+
+
+def _clean_name(raw: str) -> str:
+    """Trim a captured customer phrase: drop a leading title and stray punctuation."""
+    name = re.sub(r"^\s*" + _TITLE, "", raw.strip(" .,"), flags=re.I)
+    return re.sub(r"\s+", " ", name).strip(" .,")
+
+
+def _plausible_customer(name: str) -> bool:
+    toks = name.lower().split()
+    return bool(toks) and toks[0] not in _NOT_NAME_START and not any(c.isdigit() for c in name)
 
 _FILLER = re.compile(
     r"\b(please|kindly|good (morning|afternoon|evening)|record|create|make|raise|"
@@ -110,34 +145,47 @@ def heuristic_extract(transcript: str) -> Intent:
 
     customer = ""
 
-    # 0. Leading subject: "<Name> bought/wants/ordered ... <rest>". Common phrasing
-    #    where the customer opens the sentence rather than trailing it.
-    m = re.match(
-        r"^\s*([A-Z][\w&.'-]*(?:\s+[A-Z0-9][\w&.'-]*){0,4})\s+" + _SUBJECT_VERBS + r"\b",
-        text,
-    )
-    if m and not re.search(r"\d", m.group(1)):
-        customer = m.group(1).strip(" .,")
+    # 0a. "invoice/bill <name> for <items>".
+    m = re.match(r"^\s*(?:invoice|bill|charge)\s+(" + _NAME + r")\s+for\s+", text, re.I)
+    if m and _plausible_customer(_clean_name(m.group(1))):
+        customer = _clean_name(m.group(1))
         text = text[m.end():]
 
-    # 1. Otherwise pull a trailing customer clause off the end, so it is not parsed
-    #    as part of the last line item.
+    # 0b. "give/send/deliver <name> <qty> <items>" — the name sits before the quantity.
     if not customer:
-        m = re.search(r"\bfor\s+(?:customer|client)\s+(.+?)\s*[.?!]*\s*$", text, re.I)
+        m = re.match(
+            r"^\s*(?:give|send|deliver|sell|issue)\s+(" + _NAME + r")\s+(?=\d|\b" + _NUMWORD + r"\b)",
+            text, re.I,
+        )
+        if m and _plausible_customer(_clean_name(m.group(1))):
+            customer = _clean_name(m.group(1))
+            text = text[m.end():]
+
+    # 0c. Leading subject: "<name> bought/wan buy/... <rest>", any capitalisation,
+    #     because speech recognition rarely capitalises names.
+    if not customer:
+        m = re.match(r"^\s*(" + _NAME + r")\s+" + _SUBJECT_VERBS + r"\b", text, re.I)
+        if m and _plausible_customer(_clean_name(m.group(1))):
+            customer = _clean_name(m.group(1))
+            text = text[m.end():]
+
+    # 0d. Strip a leading imperative ("send around 5 bags ...") so the quantity is
+    #     the first thing in the line.
+    text = _LEAD_IMPERATIVE.sub("", text, count=1)
+
+    # 1. Otherwise pull a customer clause off the end, so it is not parsed as part
+    #    of the last line item.
+    if not customer:
+        m = re.search(r"\b(?:for|to)\s+(?:customer|client)\s+(.+?)\s*[.?!]*\s*$", text, re.I)
         if m:
-            customer = m.group(1).strip(" .,")
+            customer = _clean_name(m.group(1))
             text = text[: m.start()]
     if not customer:
-        m = re.search(r"\bto\s+(?:customer|client)\s+(.+?)\s*[.?!]*\s*$", text, re.I)
-        if m:
-            customer = m.group(1).strip(" .,")
-            text = text[: m.start()]
-    if not customer:
-        # A trailing "for <Capitalised Name>" with no digit is a customer, not a
-        # price ("... for Adebayo Stores"). A price would read "... for 12500".
-        m = re.search(r"\bfor\s+([A-Z][\w&.'-]*(?:\s+[A-Z0-9][\w&.'-]*){0,4})\s*[.?!]*\s*$", text)
-        if m and not re.search(r"\d", m.group(1)):
-            customer = m.group(1).strip(" .,")
+        # A trailing "for/to <name>" with no digit is a customer, not a price
+        # ("... for Adebayo Stores"). A price would read "... for 12500".
+        m = re.search(r"\b(?:for|to)\s+(" + _TITLE + r")?(" + _NAME + r")\s*[.?!]*\s*$", text, re.I)
+        if m and _plausible_customer(_clean_name(m.group(2))):
+            customer = _clean_name(m.group(2))
             text = text[: m.start()]
 
     # 2. Pull payment terms if stated.
@@ -146,6 +194,17 @@ def heuristic_extract(transcript: str) -> Intent:
     if m:
         terms = m.group(1).strip(" .,")
         text = text[: m.start()]
+
+    # 3. A customer named mid-sentence, before the price or a comma:
+    #    "10 lengths of iron rod to musa hardware at 8,500 each".
+    if not customer:
+        m = re.search(
+            r"\b(?:for|to)\s+(" + _TITLE + r")?(" + _NAME + r")\s*(?=$|[,.]|\bat\b|@|\bfor\s+\d|\s\d)",
+            text, re.I,
+        )
+        if m and _plausible_customer(_clean_name(m.group(2))):
+            customer = _clean_name(m.group(2))
+            text = text[: m.start()] + " " + text[m.end():]
 
     body = _strip_filler(text)
     body = re.sub(r"^\s*for\b\s*", "", body, flags=re.I)  # leftover "invoice FOR ..."

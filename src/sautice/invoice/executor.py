@@ -45,7 +45,9 @@ def build_draft(intent: Intent, roster: dict, selections: dict | None = None,
 
     terms = _resolve_terms(intent.terms_text, today)
 
-    ready = not questions and bool(lines) and priced and customer["status"] == "resolved"
+    # A customer the user explicitly confirmed as new is as good as one from the
+    # roster: the draft must be creatable, or "New customer" would be a dead end.
+    ready = not questions and bool(lines) and priced and customer["status"] in ("resolved", "new")
     return {
         "customer": customer,
         "lines": lines,

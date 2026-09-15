@@ -80,6 +80,69 @@ describe("draft computation", () => {
   });
 });
 
+// Mirrors TestCustomerSelection in tests/test_invoice.py.
+describe("customer selection", () => {
+  const NEW_CUSTOMER = "Zainab Kachalla Global bought 2 bags of Dangote cement at twelve thousand five hundred naira each";
+
+  it("is ready to create once a new customer is confirmed", () => {
+    const blocked = draft(NEW_CUSTOMER);
+    expect(blocked.customer.status).toBe("unknown");
+    expect(blocked.ready).toBe(false);
+    const d = draft(NEW_CUSTOMER, { customer_id: "NEW", customer_new_name: "Zainab Kachalla Global" });
+    expect(d.customer.status).toBe("new");
+    expect(d.customer.resolved?.name).toBe("Zainab Kachalla Global");
+    expect(d.questions).toEqual([]);
+    expect(d.ready).toBe(true);
+    expect(d.total_kobo).toBe(2_500_000);
+  });
+
+  it("stays ready when the customer is changed to a roster one", () => {
+    const d = draft("Musa bought two buckets of emulsion paint at eight thousand naira each", { customer_id: "c08" });
+    expect(d.customer.resolved?.name).toBe("Musa Hardware");
+    expect(d.ready).toBe(true);
+  });
+
+  it("finds a lowercase customer after 'to'", () => {
+    const d = draft("send 5 bags of dangote cement to adebayo stores at 12500 naira each");
+    expect(d.customer.resolved?.name).toBe("Adebayo Stores");
+    expect(d.lines[0].qty).toBe(5);
+    expect(d.lines[0].unit_price_kobo).toBe(1_250_000);
+    expect(d.ready).toBe(true);
+  });
+
+  it("finds a customer named before the quantity", () => {
+    const d = draft("give ngozi ventures 20 roofing sheets");
+    expect(d.customer.resolved?.name).toBe("Ngozi Ventures");
+    expect(d.lines[0].qty).toBe(20);
+    expect(d.ready).toBe(true);
+  });
+
+  it("reads 'invoice <name> for <items>'", () => {
+    const d = draft("invoice adebayo stores for five bags of cement at twelve-five each");
+    expect(d.customer.resolved?.name).toBe("Adebayo Stores");
+    expect(d.ready).toBe(true);
+  });
+
+  it("does not leave a mid-sentence customer inside the product", () => {
+    const i = heuristicExtract("10 lengths of iron rod to musa hardware at 8,500 each");
+    expect(i.customer_query).toBe("musa hardware");
+    expect(i.lines[0].product_query.toLowerCase()).not.toContain("musa");
+  });
+
+  it("never takes a price as a customer", () => {
+    const i = heuristicExtract("2 bags of cement for 12500 each");
+    expect(i.customer_query).toBe("");
+    expect(i.lines[0].price_text).toBe("12500");
+  });
+
+  it("asks instead of inventing a customer", () => {
+    const d = draft("5 bags of cement at 12500 each");
+    expect(d.customer.status).toBe("missing");
+    expect(d.ready).toBe(false);
+    expect(d.questions.some((q) => q.field === "customer")).toBe(true);
+  });
+});
+
 // Mirrors TestCodeSwitchedPhrasing in tests/test_invoice.py.
 describe("code-switched phrasing", () => {
   it("keeps the customer after a leading 'Abeg,'", () => {

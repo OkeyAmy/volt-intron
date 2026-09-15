@@ -36,7 +36,10 @@ export function buildDraft(intent: Intent, roster: Roster, selections: Selection
   }
 
   const terms = resolveTerms(intent.terms_text, today);
-  const ready = questions.length === 0 && lines.length > 0 && priced && customer.status === "resolved";
+  // A customer the user explicitly confirmed as new is as good as one from the
+  // roster: the draft must be creatable, or "New customer" would be a dead end.
+  const ready = questions.length === 0 && lines.length > 0 && priced
+    && (customer.status === "resolved" || customer.status === "new");
 
   return {
     customer,

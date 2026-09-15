@@ -33,6 +33,7 @@ export default function DraftReview({ transcript, onIssued, onEditWords }: {
   // A missing database can't be fixed by retrying, so no Try again button for it.
   const [retryable, setRetryable] = useState(true);
   const [editLine, setEditLine] = useState<number | null>(null);
+  const [editCustomer, setEditCustomer] = useState(false);
   const selRef = useRef<Selections>({ lines: [] });
   const idemRef = useRef<string>(crypto.randomUUID());
 
@@ -101,6 +102,24 @@ export default function DraftReview({ transcript, onIssued, onEditWords }: {
     post(sel, draftId);
   }, [draft, draftId, post]);
 
+  // Change the customer after it has been resolved: pick another one from the
+  // roster, or name a new one. Same selections path as answering the question, so
+  // the draft is rebuilt and re-versioned on the server.
+  const chooseCustomer = useCallback((value: string, newName?: string) => {
+    const sel = structuredClone(selRef.current);
+    if (value === "NEW") {
+      sel.customer_id = "NEW";
+      sel.customer_new_name = (newName ?? draft?.customer.resolved?.name ?? draft?.customer.query ?? "").trim();
+      if (!sel.customer_new_name) return;
+    } else {
+      sel.customer_id = value;
+      delete sel.customer_new_name;
+    }
+    selRef.current = sel;
+    setEditCustomer(false);
+    post(sel, draftId);
+  }, [draft, draftId, post]);
+
   const confirm = useCallback(async () => {
     if (!draftId) return;
     setBusy(true); setCreating(true); setError("");
@@ -151,7 +170,22 @@ export default function DraftReview({ transcript, onIssued, onEditWords }: {
       <div className="rev-head">
         <span className="sr-label">Customer</span>
         <strong>{draft.customer.status === "resolved" || draft.customer.status === "new" ? customerName : <em className="sr-placeholder">to confirm</em>}</strong>
+        {draft.customer.status === "new" && <span className="rev-tag" title="Will be added to your customers">new</span>}
+        <button className="sr-linkbtn" onClick={() => setEditCustomer((v) => !v)}
+          aria-expanded={editCustomer} disabled={busy}>
+          Change<span className="sr-visually-hidden"> customer</span>
+        </button>
       </div>
+
+      {editCustomer && (
+        <CustomerEditor
+          candidates={draft.customer.candidates ?? []}
+          current={draft.customer.resolved?.name ?? draft.customer.query ?? ""}
+          disabled={busy}
+          onPick={chooseCustomer}
+          onCancel={() => setEditCustomer(false)}
+        />
+      )}
 
       <table className="rev-table">
         <thead>
@@ -235,6 +269,42 @@ export default function DraftReview({ transcript, onIssued, onEditWords }: {
         </div>
       )}
     </div>
+  );
+}
+
+function CustomerEditor({ candidates, current, disabled, onPick, onCancel }: {
+  candidates: { id: string; name: string }[];
+  current: string;
+  disabled: boolean;
+  onPick: (value: string, newName?: string) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState(current);
+  return (
+    <fieldset className="rev-q">
+      <legend>Change the customer</legend>
+      {candidates.length > 0 && (
+        <div className="rev-opts">
+          {candidates.map((c) => (
+            <button key={c.id} className="sr-btn sr-ghost rev-opt" disabled={disabled} onClick={() => onPick(c.id)}>
+              {c.name}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="rev-editrow">
+        <label className="sr-label" htmlFor="edit-customer">Or type the customer&apos;s name</label>
+        <input id="edit-customer" className="sr-select" value={name} disabled={disabled}
+          placeholder="e.g. Adebayo Stores" onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) onPick("NEW", name.trim()); }} />
+      </div>
+      <div className="rev-opts">
+        <button className="sr-btn sr-primary rev-opt" disabled={disabled || !name.trim()} onClick={() => onPick("NEW", name.trim())}>
+          Use this name
+        </button>
+        <button className="sr-btn sr-ghost rev-opt" disabled={disabled} onClick={onCancel}>Cancel</button>
+      </div>
+    </fieldset>
   );
 }
 

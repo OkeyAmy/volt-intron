@@ -105,6 +105,59 @@ class TestCodeSwitchedPhrasing:
         assert i.lines[1].price_text == "" and "paint" in i.lines[1].product_query
 
 
+class TestCustomerSelection:
+    """Setting or changing the customer must let the invoice be created, and a
+    customer named in ordinary speech (lowercase, mid-sentence) must be found."""
+
+    @staticmethod
+    def _draft(transcript: str, selections: dict | None = None) -> dict:
+        return build_draft(heuristic_extract(transcript), ROSTER, selections or {}, today="2026-09-16")
+
+    def test_confirmed_new_customer_is_ready_to_create(self):
+        t = "Zainab Kachalla Global bought 2 bags of Dangote cement at twelve thousand five hundred naira each"
+        blocked = self._draft(t)
+        assert blocked["customer"]["status"] == "unknown" and not blocked["ready"]
+        d = self._draft(t, {"customer_id": "NEW", "customer_new_name": "Zainab Kachalla Global"})
+        assert d["customer"]["status"] == "new"
+        assert d["customer"]["resolved"]["name"] == "Zainab Kachalla Global"
+        assert d["questions"] == [] and d["ready"] and d["total_kobo"] == 2_500_000
+
+    def test_changing_the_customer_to_a_roster_one_keeps_it_ready(self):
+        d = self._draft("Musa bought two buckets of emulsion paint at eight thousand naira each",
+                        {"customer_id": "c08"})
+        assert d["customer"]["resolved"]["name"] == "Musa Hardware" and d["ready"]
+
+    def test_lowercase_customer_after_to(self):
+        d = self._draft("send 5 bags of dangote cement to adebayo stores at 12500 naira each")
+        assert d["customer"]["resolved"]["name"] == "Adebayo Stores"
+        assert d["lines"][0]["qty"] == 5 and d["lines"][0]["unit_price_kobo"] == 1_250_000
+        assert d["ready"]
+
+    def test_customer_named_before_the_quantity(self):
+        d = self._draft("give ngozi ventures 20 roofing sheets")
+        assert d["customer"]["resolved"]["name"] == "Ngozi Ventures"
+        assert d["lines"][0]["qty"] == 20 and d["ready"]
+
+    def test_invoice_name_for_items(self):
+        d = self._draft("invoice adebayo stores for five bags of cement at twelve-five each")
+        assert d["customer"]["resolved"]["name"] == "Adebayo Stores" and d["ready"]
+
+    def test_customer_mid_sentence_is_not_left_in_the_product(self):
+        i = heuristic_extract("10 lengths of iron rod to musa hardware at 8,500 each")
+        assert i.customer_query == "musa hardware"
+        assert "musa" not in i.lines[0].product_query.lower()
+
+    def test_a_price_is_never_taken_as_a_customer(self):
+        i = heuristic_extract("2 bags of cement for 12500 each")
+        assert i.customer_query == ""
+        assert i.lines[0].price_text == "12500"
+
+    def test_no_customer_still_asks_instead_of_inventing_one(self):
+        d = self._draft("5 bags of cement at 12500 each")
+        assert d["customer"]["status"] == "missing" and not d["ready"]
+        assert any(q["field"] == "customer" for q in d["questions"])
+
+
 class TestDraftComputation:
     def _draft(self, transcript, selections=None):
         return build_draft(heuristic_extract(transcript), ROSTER, selections or {}, today="2026-09-14")
