@@ -13,6 +13,27 @@ category *Fintech, Telco & Customer Experience*
 
 ---
 
+# Featured research: which STT provider earns Sautice's invoices?
+
+Every recorded sale becomes an invoice, so pickup errors are money. Our 3-page study —
+**[`docs/sautice-stt-research-paper.md`](docs/sautice-stt-research-paper.md)** — benchmarks
+ElevenLabs, Groq, and Intron on 68 recordings across Nigerian English, Pidgin, Hausa, Igbo,
+and Yoruba, using frozen industry-standard scoring (metrics v2.0) plus a live end-to-end
+invoice probe.
+
+**Headline results**
+
+- **Intron Sahara** — best open-corpus ASR (16.4% WER, 7.2% CER, 22.7% macro), but worst on
+  the in-house recorded briefs (60.6% WER → 1/8 invoices exact).
+- **ElevenLabs** — second on the corpus (18.5% WER), **first where it pays**: 50% exact
+  invoices on the product probe, 14.5% WER on recorded briefs, ~2 s latency.
+- **Groq** — English-tier only here: Hausa 92% WER, Yoruba 94.6%, Igbo 5/5 API failures.
+
+**Verdict: ElevenLabs is the invoicing default today; Intron is the retest candidate after
+channel hardening; Groq stays a fast English tier.**
+
+---
+
 ## Getting started
 
 Two parts, one repo: the **financial core** (Python — offline, testable by anyone with no
