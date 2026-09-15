@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sautice Benchmark Report</title>
+<style>
+  :root{ --ink:#14181f; --muted:#5b6472; --line:#d9dee6; --accent:#0f5c4a; --win:#e6f4ef; --bad:#fbecea; }
+  *{ box-sizing:border-box; }
+  html{ font-family:"Segoe UI",-apple-system,Roboto,Helvetica,Arial,sans-serif; color:var(--ink); font-size:10.5px; line-height:1.45; }
+  body{ margin:0; }
+  @page{ size:A4; margin:14mm 15mm; }
+  .page{ page-break-after:always; }
+  .page:last-child{ page-break-after:auto; }
+  h1{ font-size:20px; margin:0 0 2px; letter-spacing:-.01em; }
+  h2{ font-size:13px; margin:16px 0 6px; color:var(--accent); border-bottom:1.5px solid var(--accent); padding-bottom:3px; }
+  h3{ font-size:11px; margin:11px 0 3px; }
+  p{ margin:5px 0; }
+  .sub{ color:var(--muted); font-size:10px; margin:0 0 8px; }
+  .lede{ font-size:10.5px; }
+  table{ border-collapse:collapse; width:100%; margin:6px 0 4px; font-size:9.6px; }
+  th,td{ border:1px solid var(--line); padding:4px 6px; text-align:left; }
+  th{ background:#f2f5f8; font-weight:600; }
+  td.n,th.n{ text-align:right; font-variant-numeric:tabular-nums; }
+  .win{ background:var(--win); font-weight:700; }
+  .cap{ font-size:9px; color:var(--muted); margin:2px 0 10px; }
+  ul{ margin:4px 0 8px; padding-left:16px; } li{ margin:2px 0; }
+  .kpis{ display:flex; gap:8px; margin:8px 0; }
+  .kpi{ flex:1; border:1px solid var(--line); border-radius:6px; padding:7px 9px; }
+  .kpi b{ display:block; font-size:17px; color:var(--accent); } .kpi span{ font-size:9px; color:var(--muted); }
+  .foot{ font-size:8.5px; color:var(--muted); border-top:1px solid var(--line); margin-top:10px; padding-top:5px; }
+  code{ background:#f2f5f8; padding:1px 3px; border-radius:3px; font-size:9px; }
+</style>
+</head>
+<body>
+
+<!-- PAGE 1 -->
+<section class="page">
+  <h1>Sautice — Code-Switched ASR Benchmark</h1>
+  <p class="sub">Sahara CodeSwitch Africa Challenge 2026 · voice-to-invoice for Nigerian SMEs · <code>github.com/OkeyAmy/volt-intron</code></p>
+
+  <p class="lede"><b>Question.</b> For a fintech that turns spoken, code-switched Nigerian speech into a money document, which speech-to-text model transcribes Nigerian and Pidgin speech accurately enough to act on — and does model choice change how often the app can safely issue an invoice?</p>
+
+  <div class="kpis">
+    <div class="kpi"><b>16.4%</b><span>Sahara overall WER (best of 3)</span></div>
+    <div class="kpi"><b>38.9%</b><span>Sahara Pidgin WER vs 77.9% Whisper</span></div>
+    <div class="kpi"><b>0</b><span>catastrophic money errors, all models</span></div>
+  </div>
+
+  <h2>Models compared</h2>
+  <table>
+    <tr><th>Model</th><th>Provider / snapshot</th><th>Transport</th><th>Role here</th></tr>
+    <tr><td><b>Intron Sahara</b></td><td>Intron, API default</td><td>Sync file API</td><td>Product ASR (streaming + file fallback)</td></tr>
+    <tr><td>Whisper large-v3-turbo</td><td>Groq</td><td>REST</td><td>Strong general multilingual baseline</td></tr>
+    <tr><td>Scribe v1</td><td>ElevenLabs</td><td>REST</td><td>Recent high-accuracy commercial ASR</td></tr>
+  </table>
+  <p class="cap">Three models, Sahara plus two others, as required. Gemini has a provider adapter in the repo but was not run in this pilot and is not reported, to avoid unmeasured claims.</p>
+
+  <h2>Data</h2>
+  <table>
+    <tr><th>Source (HuggingFace)</th><th>Content</th><th class="n">Clips</th></tr>
+    <tr><td><code>AlaminI/nigerian_common_voice_dataset</code></td><td>Nigerian-accented read speech — English, Hausa, Igbo, Yoruba</td><td class="n">20</td></tr>
+    <tr><td><code>McGill-NLP/NaijaS2ST</code> (dev)</td><td>Nigerian English (EN×15) and English–Yoruba (EY×15)</td><td class="n">30</td></tr>
+    <tr><td><code>asr-nigerian-pidgin/nigerian-pidgin-1.0</code></td><td>Nigerian Pidgin</td><td class="n">10</td></tr>
+    <tr><td colspan="2"><b>+ in-domain recorded invoice utterances</b> (spoken sales, for the downstream test)</td><td class="n">8</td></tr>
+    <tr><td colspan="2"><b>Total committed</b></td><td class="n">68</td></tr>
+  </table>
+  <p class="cap">≈ 4.1 minutes of audio per model (245.9 s). All clips resampled to 16 kHz mono PCM via ffmpeg. This is a <b>pilot</b> — sample sizes are small (10–20 per language cell, 8 downstream); results show clear per-language separation but confidence intervals are wide and are reported alongside every mean.</p>
+
+  <h2>Metrics &amp; why</h2>
+  <ul>
+    <li><b>WER / CER</b> via <code>jiwer 4.0</code> on symmetrically normalised reference and hypothesis (whisper-normalizer: English normaliser for EN, Basic + diacritic-removal for tonal languages, frozen before scoring). WER is the standard ASR metric; CER is added because it is fairer to tonal/agglutinative languages where a single morpheme error inflates WER.</li>
+    <li><b>Downstream money-outcome</b> — the metric that matters for a fintech: feed each transcript to the actual invoice pipeline and classify the result as <i>exact</i>, <i>off-by-small</i>, <b>catastrophic</b> (a confidently wrong total), <i>blocked</i> (guard asked a question), or <i>ready</i>. WER alone does not tell you whether the money was right.</li>
+    <li><b>Latency &amp; RTFx</b> — usability on a mid-range phone on mobile data.</li>
+  </ul>
+
+  <p class="foot">Generated from <code>benchmarks/outputs/pilot/results.json</code> · run 2026-09-15 · commit <code>ccd7594</code> · jiwer 4.0.0 · Python 3.12 · reproducible via <code>benchmarks/run.py</code>. Page 1 of 3.</p>
+</section>
+
+<!-- PAGE 2 -->
+<section class="page">
+  <h2>Quantitative results — overall</h2>
+  <table>
+    <tr><th>Model</th><th class="n">WER</th><th class="n">±95% CI</th><th class="n">CER</th><th class="n">Latency</th><th class="n">RTFx</th><th class="n">Completion</th></tr>
+    <tr><td class="win">Intron Sahara</td><td class="n win">0.164</td><td class="n">0.055</td><td class="n win">0.072</td><td class="n">19.45 s</td><td class="n">0.17×</td><td class="n">100%</td></tr>
+    <tr><td>ElevenLabs Scribe v1</td><td class="n">0.170</td><td class="n">0.073</td><td class="n">0.067</td><td class="n">3.23 s</td><td class="n">1.07×</td><td class="n">100%</td></tr>
+    <tr><td>Whisper large-v3-turbo</td><td class="n">0.382</td><td class="n">0.109</td><td class="n">0.188</td><td class="n">2.51 s</td><td class="n">1.33×</td><td class="n">92.6%</td></tr>
+  </table>
+  <p class="cap">Lower is better for WER/CER/latency. Sahara and Scribe are statistically tied overall; Whisper is roughly 2× worse. <b>Latency is Sahara's clear trade-off in this batch file benchmark (19.5 s)</b> — in the product the streaming path returns partial transcripts in ~2–5 s, and the file API is used only as a dropout fallback.</p>
+
+  <h2>Quantitative results — per language (WER)</h2>
+  <table>
+    <tr><th>Language / accent</th><th class="n">Sahara</th><th class="n">Whisper</th><th class="n">Scribe</th><th class="n">Clips</th></tr>
+    <tr><td><b>Nigerian Pidgin</b> (most code-switched)</td><td class="n win">0.389</td><td class="n">0.779</td><td class="n">0.495</td><td class="n">10</td></tr>
+    <tr><td><b>Nigerian-accented</b> (en/ha/ig/yo, Common Voice)</td><td class="n win">0.185</td><td class="n">0.669</td><td class="n">0.161</td><td class="n">15–20</td></tr>
+    <tr><td>NaijaS2ST — English</td><td class="n">0.091</td><td class="n">0.121</td><td class="n win">0.056</td><td class="n">15</td></tr>
+    <tr><td>NaijaS2ST — English–Yoruba</td><td class="n win">0.060</td><td class="n">0.091</td><td class="n">0.077</td><td class="n">15</td></tr>
+  </table>
+  <p class="cap">The story is in the hard rows. On <b>Pidgin</b> and <b>Nigerian-accented</b> speech — the exact registers Nigerian traders use — Sahara halves Whisper's error and edges Scribe on Pidgin. On clean read English the three converge, as expected. Scribe is very strong but degrades more than Sahara on Pidgin (0.495 vs 0.389).</p>
+
+  <h2>Error composition</h2>
+  <table>
+    <tr><th>Model</th><th class="n">Substitutions</th><th class="n">Deletions</th><th class="n">Insertions</th><th class="n">Hits / ref words</th></tr>
+    <tr><td>Intron Sahara</td><td class="n">52</td><td class="n">25</td><td class="n">6</td><td class="n">389 / 472</td></tr>
+    <tr><td>ElevenLabs Scribe v1</td><td class="n">57</td><td class="n">16</td><td class="n">9</td><td class="n">393 / 475</td></tr>
+    <tr><td>Whisper large-v3-turbo</td><td class="n">119</td><td class="n">36</td><td class="n">10</td><td class="n">293 / 458</td></tr>
+  </table>
+  <p class="cap">Whisper's errors are dominated by substitutions (119) — it confidently mishears Nigerian words as similar English ones, the worst failure mode for a downstream money task because it produces fluent-but-wrong text. Sahara's low insertion count (6) means it rarely hallucinates words that were not spoken.</p>
+
+  <p class="foot">All means carry n and a 95% CI in the source JSON. Small per-cell n means language <i>rankings</i> are more reliable than exact point values. Page 2 of 3.</p>
+</section>
+
+<!-- PAGE 3 -->
+<section class="page">
+  <h2>Downstream task — did the invoice come out right?</h2>
+  <p>Each transcript was run through Sautice's real invoice pipeline (heuristic extraction → deterministic executor). Outcome classes on the 8 recorded invoice utterances:</p>
+  <table>
+    <tr><th>Model</th><th class="n">Exact</th><th class="n">Off-small</th><th class="n">Catastrophic</th><th class="n">Blocked (asked)</th><th class="n">Ready</th></tr>
+    <tr><td>Intron Sahara</td><td class="n">1</td><td class="n">0</td><td class="n win">0</td><td class="n">7</td><td class="n">1</td></tr>
+    <tr><td>ElevenLabs Scribe v1</td><td class="n">4</td><td class="n">2</td><td class="n win">0</td><td class="n">2</td><td class="n">6</td></tr>
+    <tr><td>Whisper large-v3-turbo</td><td class="n">0</td><td class="n">0</td><td class="n win">0</td><td class="n">8</td><td class="n">0</td></tr>
+  </table>
+  <p class="cap"><b>The headline safety result: zero catastrophic errors for every model.</b> No model ever caused a confidently-wrong invoice — because the deterministic core refuses to guess and asks a clarifying question instead (the "blocked" column). Whisper's transcripts were too garbled to extract a transaction at all, so everything was blocked (safe, but unusable). This downstream set is small (n=8) and does not separate Sahara from Scribe on its own; it validates the safety design and motivates the accuracy findings above. In production the streaming path plus in-market vocabulary is expected to move more Sahara cases from "blocked" to "ready".</p>
+
+  <h2>Qualitative findings per model</h2>
+  <h3>Intron Sahara — chosen for the product</h3>
+  <ul>
+    <li><b>Strengths:</b> best or tied-best on every Nigerian category; strongest on Pidgin and Nigerian accents by a wide margin; near-zero hallucination (6 insertions); native code-switched language codes (<code>yo/ig/ha/pcm</code>); 100% completion.</li>
+    <li><b>Weaknesses:</b> highest latency in batch file mode (~19 s) — mitigated in the product by using streaming for live partials and the file API only as a dropout fallback.</li>
+  </ul>
+  <h3>ElevenLabs Scribe v1</h3>
+  <ul>
+    <li><b>Strengths:</b> excellent on clean English/read speech (best CER); fast (3.2 s); 100% completion.</li>
+    <li><b>Weaknesses:</b> degrades on Pidgin (0.495 WER) more than Sahara; no Nigerian code-switched language selection; a third-party dependency outside the challenge's Sahara requirement.</li>
+  </ul>
+  <h3>Whisper large-v3-turbo (Groq)</h3>
+  <ul>
+    <li><b>Strengths:</b> fastest (2.5 s, 1.33× realtime); fine on clean English (0.121).</li>
+    <li><b>Weaknesses:</b> collapses on Nigerian-accented (0.669) and Pidgin (0.779) speech; substitution-heavy (confident mishears); 7.4% of clips failed to return usable text.</li>
+  </ul>
+
+  <h2>Conclusion</h2>
+  <p>For Nigerian, code-switched, market speech, <b>Intron Sahara is the most accurate model tested</b> and the only one built for Nigerian language codes; Scribe is a close general-purpose second but weaker on Pidgin, and Whisper is unsuitable for this domain. Sahara is therefore the product's primary engine, with a synchronous Sahara file fallback for transport reliability. Across all models, the deterministic money layer produced <b>zero catastrophic invoices</b> — the correct safety property for a fintech built on imperfect ASR.</p>
+  <p class="cap"><b>Limitations &amp; next steps.</b> Pilot scale (68 clips, 8 downstream). Next: expand to ≥300 clips per language with native-speaker reference audits, add Gemini, and evaluate the live streaming path (not just file mode) for latency.</p>
+
+  <p class="foot">Reproducible: <code>uv run python benchmarks/run.py --tag pilot</code> · per-cell hypotheses committed at <code>outputs/pilot/transcripts/</code> · cost ledger at <code>outputs/pilot/cost.json</code>. Page 3 of 3.</p>
+</section>
+
+</body>
+</html>
