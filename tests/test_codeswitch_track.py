@@ -119,8 +119,12 @@ def test_reference_template_keeps_typed_text(tmp_path: Path):
 
 
 def _cell(id_: str, source: str, wer: float, scenario_id: str = "", text_ref: str = "x") -> dict:
+    """A scored cell as the runner builds it, including the metrics-2.0 fields
+    (diacritic-stripped WER and the edit-operation counts) that summarize() reads."""
     return {"id": id_, "provider": "p", "ok": True, "source": source, "language": "pidgin",
             "accent": "a", "norm_wer": wer, "norm_cer": wer / 2, "basic_wer": wer,
+            "norm_diac_wer": wer, "norm_ins": 0, "norm_del": 0, "norm_sub": 1, "norm_hits": 9,
+            "norm_n_ref": 10,
             "latency_s": 1.0, "audio_sec": 2.0, "duration": "2.0", "text_ref": text_ref,
             "scenario_id": scenario_id, "money": {"outcome": "blocked", "ready": False}}
 

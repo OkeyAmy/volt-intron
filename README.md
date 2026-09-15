@@ -8,6 +8,8 @@ Sautice combines the idea of voice (Sauti) in Swahili with invoice, reflecting t
 Entry for the [Sahara CodeSwitch Africa Challenge 2026](https://www.intron.io/compete/) ·
 category *Fintech, Telco & Customer Experience*
 
+**[▶ Demo video](https://youtu.be/Kxis6hzYuPI)** · **[Live app](https://sautice-voice1.onrender.com)**
+
 [Quickstart](docs/quickstart.md) · [Research log](docs/research.md) · [Recording protocol](docs/recording-protocol.md)
 </div>
 
@@ -50,7 +52,7 @@ For full detail, start at [`docs/quickstart.md`](docs/quickstart.md).
 
 ```bash
 uv sync
-uv run pytest          # 78 passed — money engine + naira number grammar, fully offline
+uv run pytest          # 115 passed — money engine, naira grammar, invoice engine, benchmark, fully offline
 ```
 
 Run the number-grammar demo that shows it **refusing to guess** (see `docs/quickstart.md §3` for the
@@ -84,7 +86,7 @@ Other web commands:
 | Command | What it does |
 |---|---|
 | `pnpm smoke:intron <file.wav> <lang...>` | Real Intron streaming round trip from TypeScript |
-| `pnpm test` · `pnpm typecheck` · `pnpm lint` | Vitest (24), `tsc --noEmit`, ESLint |
+| `pnpm test` · `pnpm typecheck` · `pnpm lint` | Vitest (112), `tsc --noEmit`, ESLint |
 | `pnpm build` + `pnpm start` | Production build behind the same custom server |
 
 The Python equivalent of the smoke test is
