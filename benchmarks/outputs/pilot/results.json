@@ -57,10 +57,10 @@
       },
       "ok_rate": 0.9265,
       "latency_s": {
-        "mean": 2.2994,
+        "mean": 2.3181,
         "n": 68,
-        "ci95": 0.2561,
-        "sd": 1.0774,
+        "ci95": 0.2506,
+        "sd": 1.0543,
         "median": 2.1585,
         "q25": 1.7977,
         "q75": 2.7422
@@ -1003,8 +1003,9 @@
   },
   "committed_rows": 68,
   "methodology": {
-    "generated_at": "2026-09-15T23:39:39",
-    "git_commit": "9228a52cce44c71c79e99d20dd088269d047b3d0",
+    "generated_at": "2026-09-15T23:41:38",
+    "git_commit": "cb7c6e3792ead241129b411a5452d05b95b36967",
+    "metrics_version": "2.0",
     "python": "3.12.13",
     "platform": "Linux-6.19.10-300.fc44.x86_64-x86_64-with-glibc2.43",
     "deps": {
@@ -1013,8 +1014,10 @@
     },
     "audio_pipeline": "16k mono PCM via ffmpeg (see load_data / --add-recordings)",
     "scoring": {
-      "wer": "WER = (S + D + I) / N via jiwer on symmetrically normalized ref+hyp",
+      "wer": "WER = (S + D + I) / N via jiwer on symmetrically normalized ref+hyp (N = reference length = S+D+H)",
       "cer": "jiwer.cer on same normalized pairs",
+      "diac_preserving_wer": "norm_diac_wer: same pipeline with preserve_marks=True; tone gap = norm \u2212 diac-p",
+      "macro": "unweighted mean of per-language means (WAXAL/SimbaBench)",
       "norm_scheme": "whisper-normalizer: EnglishTextNormalizer (en) / BasicTextNormalizer(remove_diacritics) (other); frozen in benchmarks/eval/metrics.py before scoring",
       "ci": "95% t-based CI over per-sample scores (normal approx n>30)",
       "error_types": "ins/del/sub/hits from jiwer.process_words on the norm pair; stored per cell with a consistency assert"
