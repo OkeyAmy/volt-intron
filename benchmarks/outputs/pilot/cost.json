@@ -1,10 +1,12 @@
 {
   "intron_est_credits_all_cells": 108.19,
   "audio_seconds_by_provider": {
+    "elevenlabs": 245.89,
+    "groq_whisper": 245.89,
     "intron_sahara": 245.89
   },
-  "fresh_cells_this_run": 0,
-  "cache_hits_this_run": 68,
+  "fresh_cells_this_run": 5,
+  "cache_hits_this_run": 199,
   "est_fresh_intron_credits_this_run": 0.0,
-  "balance_snapshot": 1353.77
+  "balance_snapshot": 1530.0
 }

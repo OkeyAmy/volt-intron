@@ -30,10 +30,9 @@ incoming/
 # benchmark downloads — multi-GB, regenerable via  benchmarks.load_data
 benchmarks/data/hub_cache/
 
-# user-recorded money briefs (voice = PII) and their derived 16k wavs
-benchmarks/data/created/*.m4a
+# recorded money briefs: SOURCE audio committed for transparency (owner's own
+# voice, consented to publish); only the derived 16k wavs stay local
 benchmarks/data/created/*.wav
-benchmarks/data/created/*.mp3
 benchmarks/data/audio/16k/recorded_*.wav
 
 # TTS clips — AI-synthesized, regenerable (costs credits to recreate)

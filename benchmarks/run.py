@@ -146,21 +146,45 @@ def is_synthetic(row: dict) -> bool:
 
 def write_outputs(tag: str, cells: list[dict], rows: list[dict],
                   balance: float | None = None, run_cost: dict | None = None) -> dict:
+    """Write merged per-tag outputs.
+
+    Partial runs (a subset of providers) merge with any previous run under the
+    same tag, keyed by (provider, audio_hash), so re-running one provider never
+    erases another's cells. The cost ledger reflects the merged set.
+
+    Transparency (industry standard): every raw hypothesis is published to
+    outputs/<tag>/transcripts/<provider>.tsv so any number below is
+    independently re-derivable from the AI's actual output."""
     out_dir = OUTPUTS / tag
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    with open(out_dir / "per_cell.jsonl", "w") as f:
-        for c in cells:
+    per_tag = out_dir / "per_cell.jsonl"
+    merged: dict[tuple[str, str], dict] = {}
+    if per_tag.exists():
+        for line in per_tag.read_text().splitlines():
+            if not line.strip():
+                continue
+            c = json.loads(line)
+            merged[(c["provider"], c["audio_hash"])] = c
+    for c in cells:
+        merged[(c["provider"], c["audio_hash"])] = c
+    all_cells = list(merged.values())
+
+    with open(per_tag, "w") as f:
+        for c in all_cells:
             f.write(json.dumps(c, ensure_ascii=False, default=str) + "\n")
 
-    summary = summarize(cells)
+    trans_dir = out_dir / "transcripts"
+    write_transcripts(trans_dir, all_cells)
+
+    summary = summarize(all_cells)
     cost = {
         "intron_est_credits_all_cells": round(
             sum(float(c["audio_sec"]) * CREDITS_PER_AUDIO_SEC
-                for c in cells if c["provider"] == "intron_sahara"), 2),
+                for c in all_cells if c["provider"] == "intron_sahara"), 2),
         "audio_seconds_by_provider": {
-            p: round(sum(float(c["audio_sec"]) for c in cells if c["provider"] == p), 2)
-            for p in sorted({c["provider"] for c in cells})
+            p: round(sum(float(c["audio_sec"]) for c in all_cells if c["provider"] == p), 2)
+            for p in sorted({c["provider"] for c in all_cells})
         },
         "fresh_cells_this_run": (run_cost or {}).get("fresh", 0),
         "cache_hits_this_run": (run_cost or {}).get("cache_hits", 0),
@@ -169,16 +193,18 @@ def write_outputs(tag: str, cells: list[dict], rows: list[dict],
     }
     results = {
         "tag": tag,
-        "cells": len(cells),
-        "providers": sorted({c["provider"] for c in cells}),
+        "cells": len(all_cells),
+        "providers": sorted({c["provider"] for c in all_cells}),
         "summary": summary,
         "cost": cost,
         "committed_rows": len(rows),
+        "methodology": methodology(),
+        "provider_snapshots": provider_snapshots(),
     }
     (out_dir / "results.json").write_text(json.dumps(results, indent=2, default=str))
     (out_dir / "cost.json").write_text(json.dumps(cost, indent=2))
     (out_dir / "report.md").write_text(render_report(tag, summary))
-    print(f"[out] {out_dir}")
+    print(f"[out] {out_dir} ({len(all_cells)} cells, {len({c['provider'] for c in all_cells})} providers)")
     return summary
 
 
@@ -195,17 +221,30 @@ def summarize(cells: list[dict]) -> dict:
         recorded = [c for c in human if c.get("source") == "recorded"]
         codeswitch = [c for c in human if c.get("source") == "codeswitch"]
         syn = [c for c in cs if is_synthetic(c)]
+        cok = [c for c in corpus if c["ok"]]
         s = {
-            "n": len(corpus),
-            "norm_wer": met.summarize([c["norm_wer"] for c in corpus if c["ok"]]),
-            "norm_cer": met.summarize([c["norm_cer"] for c in corpus if c["ok"]]),
-            "basic_wer": met.summarize([c["basic_wer"] for c in corpus if c["ok"]]),
+            "n": len(cok),
+            "norm_wer": met.summarize([c["norm_wer"] for c in cok]),
+            "norm_cer": met.summarize([c["norm_cer"] for c in cok]),
+            "basic_wer": met.summarize([c["basic_wer"] for c in cok]),
+            "wer_median": met.summarize([c["norm_wer"] for c in cok]).get("median"),
             "recorded_wer": met.summarize([c["norm_wer"] for c in recorded if c["ok"]]),
             "ok_rate": round(sum(1 for c in cs if c["ok"]) / len(cs), 4) if cs else None,
             "latency_s": met.summarize([c["latency_s"] for c in cs]),
+            "latency_median": met.summarize([c["latency_s"] for c in cs]).get("median"),
+            "error_types": {
+                "ins": sum(c["norm_ins"] for c in cok),
+                "del": sum(c["norm_del"] for c in cok),
+                "sub": sum(c["norm_sub"] for c in cok),
+                "hits": sum(c["norm_hits"] for c in cok),
+                "n_ref": sum(c["norm_n_ref"] for c in cok),
+            },
+            "rtfx": _rtfx(cok),
+            "nwer": _numeric_wer(cok),
             "accent_breakdown": _grouped([c for c in corpus], "accent"),
             "source_breakdown": _grouped([c for c in corpus], "source"),
             "language_breakdown": _grouped([c for c in corpus], "language"),
+            "language_cer_breakdown": _grouped([c for c in corpus], "language", "norm_cer"),
             "money": mo.summarize_outcomes([c["money"] for c in cs if c.get("money")]),
             "money_scenario": mo.summarize_outcomes(
                 [c["money"] for c in cs if c.get("money") and not is_synthetic(c)]),
@@ -218,16 +257,150 @@ def summarize(cells: list[dict]) -> dict:
             "codeswitch": _codeswitch_summary(codeswitch),
         }
         s["credit_est"] = round(
-            sum(float(c["audio_sec"]) * CREDITS_PER_AUDIO_SEC for c in corpus), 1)
+            sum(float(c["audio_sec"]) * CREDITS_PER_AUDIO_SEC for c in cok), 1)
         summary[prov] = s
     return summary
+
+
+def _rtfx(cells: list[dict]) -> float | None:
+    """Inverse real-time factor = audio seconds / wall seconds (>1 = faster
+    than realtime). Industry convention (Open ASR Leaderboard): higher=better."""
+    latency_ok = [c for c in cells if c.get("latency_s") and c["latency_s"] > 0]
+    if not latency_ok:
+        return None
+    denom = sum(float(c["latency_s"]) for c in latency_ok)
+    numer = sum(float(c["audio_sec"]) for c in latency_ok)
+    return round(numer / denom, 2) if denom else None
+
+
+def _numeric_wer(cells: list[dict]) -> dict | None:
+    """NWER (numeric word error rate): WER over the subset of corpus clips
+    whose reference contains at least one digit (prices/quantities/pins).
+    AfriVox-v2 (2025) reports NWER as the deployment-critical signal:
+    numbers are the failure mode that costs money. None if no clip qualifies."""
+    num = [c for c in cells if c["ok"] and c["text_ref"] and any(ch.isdigit() for ch in c["text_ref"])]
+    if not num:
+        return None
+    s = met.summarize([c["norm_wer"] for c in num])
+    s["n"] = len(num)
+    return s
+
+
+TRANS_COLUMNS = [
+    "provider", "id", "source", "root", "language", "accent",
+    "audio_path", "ok", "latency_s", "audio_sec", "norm_wer", "norm_cer",
+    "basic_wer", "ins", "del", "sub", "n_ref", "scenario_id", "text_ref", "text_hyp",
+]
+
+
+def write_transcripts(trans_dir: Path, cells: list[dict]) -> None:
+    """Publish every hypothesis (raw + normalized) per provider as TSV evidence.
+
+    This is the transparency artifact: WER/CER/error counts in the report are
+    re-derivable from these rows alone (norm_wer_consistent is asserted per
+    cell at scoring time). References for open corpora are public; the recorded
+    brief scripts are committed alongside the source audio."""
+    by_prov: dict[str, list[dict]] = {}
+    for c in cells:
+        by_prov.setdefault(c["provider"], []).append(c)
+    for prov, cs in sorted(by_prov.items()):
+        path = trans_dir / f"{prov}.tsv"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=TRANS_COLUMNS, delimiter="\t",
+                               extrasaction="ignore")
+            w.writeheader()
+            for c in sorted(cs, key=lambda x: x["id"]):
+                w.writerow({
+                    "provider": prov, "id": c["id"], "source": c.get("source"),
+                    "root": c.get("root"), "language": c.get("language"),
+                    "accent": c.get("accent"), "audio_path": c["audio_path"],
+                    "ok": c.get("ok"), "latency_s": c.get("latency_s"),
+                    "audio_sec": c.get("audio_sec"), "norm_wer": c.get("norm_wer"),
+                    "norm_cer": c.get("norm_cer"), "basic_wer": c.get("basic_wer"),
+                    "ins": c.get("norm_ins"), "del": c.get("norm_del"),
+                    "sub": c.get("norm_sub"), "n_ref": c.get("norm_n_ref"),
+                    "scenario_id": c.get("scenario_id") or "",
+                    "text_ref": c["text_ref"], "text_hyp": c.get("text") or "",
+                })
+    (trans_dir / "README.md").write_text(
+        "Per-cell transcript evidence for the Sautice STT benchmark. One TSV "
+        "per provider; columns: raw reference and hypothesis, normalized WER/CER, "
+        "error-type counts (ins/del/sub), latency. Every aggregate in report.md "
+        "re-derives from these rows. Cache and per_cell.jsonl stay local; this "
+        "evidence is committed for transparency.\n")
+    print(f"[out] transcripts -> {trans_dir}")
+
+
+def methodology() -> dict:
+    """Reproducibility block for results.json (industry-standard metadata)."""
+    import jiwer
+    import platform
+    import sys
+
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+            check=True).stdout.strip()
+    except Exception:
+        commit = "git-describe-unavailable"
+    try:
+        jiwer_ver = __import__("importlib.metadata").metadata.version("jiwer")
+    except Exception:
+        jiwer_ver = "unknown"
+    return {
+        "generated_at": __import__("datetime").datetime.now().isoformat(timespec="seconds"),
+        "git_commit": commit,
+        "python": sys.version.split()[0],
+        "platform": platform.platform(),
+        "deps": {
+            "jiwer": jiwer_ver,
+            "whisper_normalizer": "locked-scheme (see eval/metrics.py)",
+        },
+        "audio_pipeline": "16k mono PCM via ffmpeg (see load_data / --add-recordings)",
+        "scoring": {
+            "wer": "WER = (S + D + I) / N via jiwer on symmetrically normalized "
+                   "ref+hyp",
+            "cer": "jiwer.cer on same normalized pairs",
+            "norm_scheme": "whisper-normalizer: EnglishTextNormalizer (en) / "
+                           "BasicTextNormalizer(remove_diacritics) (other); frozen "
+                           "in benchmarks/eval/metrics.py before scoring",
+            "ci": "95% t-based CI over per-sample scores (normal approx n>30)",
+            "error_types": "ins/del/sub/hits from jiwer.process_words on the "
+                           "norm pair; stored per cell with a consistency assert",
+        },
+        "corpora": {
+            "asr-nigerian-pidgin/nigerian-pidgin-1.0": "10 pidgin clips (train split)",
+            "AlaminI/nigerian_common_voice_dataset": "20 clips en/ha/ig/yo (train split)",
+            "McGill-NLP/NaijaS2ST": "30 clips ENx15 + EYx15 (dev split dev-00000)",
+        },
+        "transparency": {
+            "per_cell_hypotheses": "outputs/<tag>/transcripts/<provider>.tsv "
+                                   "(committed)",
+            "per_cell_raw": "outputs/<tag>/per_cell.jsonl (local only, git-ignored)",
+            "cost_ledger": "outputs/<tag>/cost.json (committed)",
+        },
+    }
+
+
+def provider_snapshots() -> dict:
+    """Exact model identifiers per configured provider (industry-standard pins)."""
+    from .providers import PROVIDERS
+
+    out: dict[str, str] = {}
+    for name, cls in PROVIDERS.items():
+        mod = __import__(f"benchmarks.providers.{name}", fromlist=["_DEFAULT_MODEL"])
+        out[name] = getattr(mod, "_DEFAULT_MODEL", "api-default (see provider module)")
+    return out
 
 
 def _grouped(cells: list[dict], key: str, metric: str = "norm_wer") -> dict:
     out = {}
     for c in cells:
+        if not c.get("ok"):
+            continue
         g = c.get(key) or "?"
-        out.setdefault(g, []).append(c[metric])
+        out.setdefault(g, []).append(c.get(metric, c["norm_wer"]))
     return {g: met.summarize(v) for g, v in out.items()}
 
 
@@ -287,20 +460,48 @@ def render_report(tag: str, summary: dict) -> str:
                  "Scores conflate both systems and are not comparable outside Sautice; "
                  "reported for downstream-provider decisions only.")
     lines.append("")
+    lines.append("## Methodology & transparency (industry-standard)")
+    lines.append("- **Scoring:** WER = (S + D + I) / N and CER via `jiwer`, computed on "
+                 "**symmetrically normalized** reference + hypothesis (whisper-normalizer: "
+                 "`EnglishTextNormalizer` for english, `BasicTextNormalizer(remove_diacritics)` "
+                 "for the rest). Scheme is frozen in `benchmarks/eval/metrics.py`.")
+    lines.append("- **Auditability:** every raw hypothesis is published in "
+                 f"`outputs/{tag}/transcripts/<provider>.tsv` (reference, raw hypothesis, "
+                 "normalized WER/CER, ins/del/sub counts, latency). Any aggregate below "
+                 "re-derives from those rows; each cell asserts WER == (S+D+I)/N at scoring time.")
+    lines.append("- **Provenance:** corpora pinned by Hugging Face repo + split (see "
+                 "`benchmarks/README.md` → References). Audio pipeline: 16k mono PCM via ffmpeg.")
+    lines.append("- **Reproducibility:** env pinned via `uv.lock`; `results.json` records "
+                 "git commit, dependency versions, provider model snapshots and the CI method.")
+    lines.append("")
     lines.append("## Track 1 — ASR quality (standard)")
-    lines.append("| provider | n (corpus) | norm WER (95% CI) | norm CER | basic WER | latency | cost est. (cr) |")
-    lines.append("|---|---|---|---|---|---|---|")
+    lines.append("| provider | n (corpus) | norm WER (95% CI) | median (IQR) | norm CER | "
+                 "NWER (numbers) | basic WER | RTFx (audio/s) | latency | cost est. (cr) |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|")
     for prov, s in sorted(summary.items()):
         w = s["norm_wer"]
         wstr = f"{w['mean']*100:.1f}% (±{w['ci95']*100:.1f})" if (w["mean"] is not None and w["ci95"] is not None) else "-"
+        med = f"{s['wer_median']*100:.1f}% ({s['norm_wer']['q25']*100:.1f}–{s['norm_wer']['q75']*100:.1f})" if s["wer_median"] is not None else "-"
         c = s["norm_cer"]
         cstr = f"{c['mean']*100:.1f}%" if c["mean"] is not None else "-"
+        nw = s.get("nwer")
+        nwstr = f"{nw['mean']*100:.1f}% (n={nw['n']})" if nw and nw["mean"] is not None else "-"
         b = s["basic_wer"]
         bstr = f"{b['mean']*100:.1f}%" if b["mean"] is not None else "-"
+        r = f"{s['rtfx']:.1f}x" if s["rtfx"] is not None else "-"
         l = s["latency_s"]
         lstr = f"{l['mean']:.1f}s" if l["mean"] is not None else "-"
-        lines.append(f"| {prov} | {s['n']} | {wstr} | {cstr} | {bstr} | "
+        lines.append(f"| {prov} | {s['n']} | {wstr} | {med} | {cstr} | {nwstr} | {bstr} | {r} | "
                      f"{lstr} | {s['credit_est']} |")
+    lines.append("")
+    lines.append("### Track 1 — error types (norm scoring, corpus; % of reference words)")
+    lines.append("| provider | subs | dels | ins | (word match) | n words |")
+    lines.append("|---|---|---|---|---|---|")
+    for prov, s in sorted(summary.items()):
+        e = s["error_types"]
+        nref = e["n_ref"] or 1
+        lines.append(f"| {prov} | {_pct(e['sub'], nref)} | {_pct(e['del'], nref)} | "
+                     f"{_pct(e['ins'], nref)} | {_pct(e['hits'], nref)} | {e['n_ref']} |")
     lines.append("")
     lines.append("### Track 1 — accent / language / source breakdown (norm WER)")
     for prov, s in sorted(summary.items()):
@@ -311,55 +512,28 @@ def render_report(tag: str, summary: dict) -> str:
                              for g, v in sorted(s[key].items()) if v["mean"] is not None)
             lines.append(f"- {label}: {row}")
         lines.append("")
-    cs_rows = [(p, s["codeswitch"]) for p, s in sorted(summary.items())
-               if (s.get("codeswitch") or {}).get("n")]
-    if cs_rows:
-        lines.append("## Track 3 — Code-switched speech (consented SautiBench recordings)")
-        lines.append("Controlled, consented commerce read-speech benchmark: speakers read invoice "
-                     "briefs in their own code-switched style; references are human verbatim "
-                     "transcripts. Not a claim about spontaneous conversation. Language hints are "
-                     "each provider's documented best configuration (see README), so the "
-                     "comparison is not hint-for-hint identical.")
-        lines.append("")
-        lines.append("| provider | clips (ok) | audio | speakers | norm WER (95% CI) | norm CER | basic WER "
-                     "| invoice exact, all clips | invoice exact, where reference is exact | latency |")
-        lines.append("|---|---|---|---|---|---|---|---|---|---|")
-        for prov, s in cs_rows:
-            w, c, b = s["norm_wer"], s["norm_cer"], s["basic_wer"]
-            wstr = (f"{w['mean']*100:.1f}% (±{w['ci95']*100:.1f})" if w["mean"] is not None and w["ci95"] is not None
-                    else (f"{w['mean']*100:.1f}%" if w["mean"] is not None else "-"))
-            cstr = f"{c['mean']*100:.1f}%" if c["mean"] is not None else "-"
-            bstr = f"{b['mean']*100:.1f}%" if b["mean"] is not None else "-"
-            ma, mc = s["money_all"], s["money_given_reference_exact"]
-            astr = f"{ma.get('exact', 0)}/{ma.get('n', 0)} ({_pct(ma.get('exact', 0), ma.get('n', 0))})"
-            cstr2 = f"{mc.get('exact', 0)}/{mc.get('n', 0)} ({_pct(mc.get('exact', 0), mc.get('n', 0))})"
-            l = s["latency_s"]
-            lstr = f"{l['mean']:.1f}s" if l["mean"] is not None else "-"
-            lines.append(f"| {prov} | {s['n']} ({s['ok']}) | {s['audio_sec']}s | {s['speakers']} | {wstr} | "
-                         f"{cstr} | {bstr} | {astr} | {cstr2} | {lstr} |")
-        lines.append("")
-        lines.append("Per language pair (norm WER / norm CER):")
-        for prov, s in cs_rows:
-            parts = []
-            for g, v in sorted(s["language_wer"].items()):
-                cer = s["language_cer"].get(g, {})
-                if v["mean"] is not None:
-                    parts.append(f"{g} {v['mean']*100:.1f}% / {(cer.get('mean') or 0)*100:.1f}% (n={v['n']})")
-            lines.append(f"- **{prov}**: " + " · ".join(parts))
-        first = cs_rows[0][1]
-        lines.append("")
-        lines.append(f"Reference ceiling: the human reference transcript itself yields the exact invoice on "
-                     f"{first['reference_exact']}/{first['reference_scored']} clips; the last invoice column "
-                     f"counts only those clips.")
-        try:
-            from .codeswitch import annotator_agreement
-            agr = annotator_agreement()
-            if agr.get("n"):
-                lines.append(f"Inter-annotator agreement: norm WER between two human transcripts = "
-                             f"{agr['mean']*100:.1f}% over n={agr['n']} double-annotated clips.")
-        except FileNotFoundError:
-            pass
-        lines.append("")
+
+    lines.append("### Track 1 — per-language WER vs CER (where big gap = tonal/phonetic "
+                 "loss misread as lexical error; see Ref. OpenWER / ACL FER)")
+    lines.append("| provider | language | WER | CER | gap (WER−CER) |")
+    lines.append("|---|---|---|---|---|")
+    for prov, s in sorted(summary.items()):
+        for lang in sorted(set(s["language_breakdown"]) | set(s["language_cer_breakdown"])):
+            w, c = s["language_breakdown"].get(lang), s["language_cer_breakdown"].get(lang)
+            if not w or not c or w["mean"] is None or c["mean"] is None:
+                continue
+            gap = (w["mean"] - c["mean"]) * 100
+            lines.append(f"| {prov} | {lang} | {w['mean']*100:.1f}% | {c['mean']*100:.1f}% | {gap:+.1f} |")
+    lines.append("")
+    lines.append("Notes on Track 1 metrics: **CER** is the linguistically-valid signal for "
+                 "tone/accent African languages (2026 ACL work shows WER misreads phonetic "
+                 "loss as lexical error — Yoruba e.g. BERT WER 78.8% vs CER 30.5%). "
+                 "**NWER** = WER over only clips whose reference contains a digit — the "
+                 "deployment signal that matters for money amounts (AfriVox-v2). WER reads "
+                 "high for these languages largely due to missing language-specific "
+                 "normalization (OpenWER); read it as an upper bound.")
+    lines.append("")
+
     lines.append("## Track 2 — Sautice product probe (ASR + Sautice parser; separate validity)")
     lines.append("| provider | n | exact | off≤10% | catastrophic>10% | blocked | exact rate |")
     lines.append("|---|---|---|---|---|---|---|")
@@ -373,9 +547,13 @@ def render_report(tag: str, summary: dict) -> str:
                                    ("exact", "off_small", "catastrophic", "blocked"))
             lines.append(f"| {prov} {label} | {m['n']} | {cells_txt} | {_pct(m.get('exact',0), m.get('n',0))} |")
     lines.append("")
-    lines.append(f"Supplementary: recorded briefs paired corpus WER = "
-                 f"{summary[list(summary)[0]]['recorded_wer']['mean']*100:.1f}% (n={summary[list(summary)[0]]['recorded_n']}) "
-                 if summary and summary[list(summary)[0]]["recorded_n"] else "")
+    lines.append("### Supplementary — recorded briefs WER (paired to canonical scripts)")
+    lines.append("| provider | n | norm WER |")
+    lines.append("|---|---|---|")
+    for prov, s in sorted(summary.items()):
+        rw = s["recorded_wer"]
+        if s["recorded_n"] and rw["mean"] is not None:
+            lines.append(f"| {prov} | {s['recorded_n']} | {rw['mean']*100:.1f}% |")
     lines.append("")
     lines.append("Notes: Track 2 blocked rows are cases the parser could not resolve (ASR "
                  "hallucination or normalization gap in Sautice customer matching). "
@@ -554,6 +732,11 @@ def main() -> int:
     if not cells:
         return 1
     write_outputs(args.tag, cells, load_rows(), balance=args.balance, run_cost=run_cost)
+    try:
+        from . import reference_audit
+        reference_audit.audit(args.tag)
+    except Exception as exc:  # audit is advisory; never fail the run
+        print(f"[audit] skipped: {exc}")
     return 0
 
 

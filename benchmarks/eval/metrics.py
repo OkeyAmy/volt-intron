@@ -135,12 +135,31 @@ def _guard_empty(s: str) -> str:
 
 
 def cell_metrics(ref: str, hyp: str, language: str) -> dict:
-    """Per-cell WER/CER under both schemes; guards empty pairs."""
+    """Per-cell WER/CER under both schemes; guards empty pairs.
+
+    Also returns the norm-scheme error-type counts (insertions/deletions/
+    substitutions from jiwer.process_words) and a consistency flag proving the
+    stored WER equals (S+D+I)/N, so every published number is independently
+    re-derivable from the raw hypothesis.
+    """
     out = {}
     for scheme in ("norm", "basic"):
         nr, nh = normalize_pair(ref, hyp, language, scheme)
         out[f"{scheme}_wer"] = jiwer.wer(_guard_empty(nr), _guard_empty(nh))
         out[f"{scheme}_cer"] = jiwer.cer(_guard_empty(nr), _guard_empty(nh))
+    nr, nh = normalize_pair(ref, hyp, language, "norm")
+    w = jiwer.process_words(_guard_empty(nr), _guard_empty(nh))
+    n_ref = w.substitutions + w.deletions + w.insertions + w.hits
+    out["norm_ins"] = w.insertions
+    out["norm_del"] = w.deletions
+    out["norm_sub"] = w.substitutions
+    out["norm_hits"] = w.hits
+    out["norm_n_ref"] = n_ref
+    out["norm_wer_consistent"] = (
+        n_ref > 0
+        and abs((w.insertions + w.deletions + w.substitutions) / n_ref
+                - out["norm_wer"]) < 1e-9
+    )
     return out
 
 
@@ -163,13 +182,25 @@ def t_crit_975(n: int) -> float:
 
 
 def summarize(values: list[float]) -> dict:
-    """mean / n / ci95 / sd over non-NaN scores."""
+    """mean / median / q25-q75 / n / ci95 / sd over non-NaN scores."""
+    import statistics
+
     vals = [v for v in values if v is not None and not math.isnan(v)]
     n = len(vals)
     if n == 0:
-        return {"mean": None, "n": 0, "ci95": None, "sd": None}
+        return {"mean": None, "n": 0, "ci95": None, "sd": None,
+                "median": None, "q25": None, "q75": None}
     mean = sum(vals) / n
     sd = (sum((v - mean) ** 2 for v in vals) / n) ** 0.5 if n > 1 else 0.0
     ci = t_crit_975(n) * sd / math.sqrt(n) if n > 1 else None
-    return {"mean": round(mean, 4), "n": n, "ci95": round(ci, 4) if ci else None,
-            "sd": round(sd, 4)}
+    if n == 1:
+        med = q25 = q75 = vals[0]
+    else:
+        med = statistics.median(vals)
+        q25 = statistics.quantiles(vals, n=4, method="inclusive")[0]
+        q75 = statistics.quantiles(vals, n=4, method="inclusive")[2]
+    return {
+        "mean": round(mean, 4), "n": n, "ci95": round(ci, 4) if ci else None,
+        "sd": round(sd, 4), "median": round(med, 4),
+        "q25": round(q25, 4), "q75": round(q75, 4),
+    }

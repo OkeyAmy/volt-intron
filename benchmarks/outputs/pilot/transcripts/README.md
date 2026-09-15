@@ -1,0 +1,1 @@
+Per-cell transcript evidence for the Sautice STT benchmark. One TSV per provider; columns: raw reference and hypothesis, normalized WER/CER, error-type counts (ins/del/sub), latency. Every aggregate in report.md re-derives from these rows. Cache and per_cell.jsonl stay local; this evidence is committed for transparency.
