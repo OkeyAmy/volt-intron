@@ -1,19 +1,19 @@
 {
   "pulled": {
     "pidgin": [
-      "/home/okey/Desktop/Projects/volt-intron/benchmarks/data/hub_cache/datasets--asr-nigerian-pidgin--nigerian-pidgin-1.0/snapshots/87c615091844ac1b44b91d8831683641b02df447/data/train-00000-of-00002-06caf65bef6a8834.parquet"
+      "/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/hub_cache/datasets--asr-nigerian-pidgin--nigerian-pidgin-1.0/snapshots/87c615091844ac1b44b91d8831683641b02df447/data/train-00000-of-00002-06caf65bef6a8834.parquet"
     ],
     "alamins": {
-      "english": "/home/okey/Desktop/Projects/volt-intron/benchmarks/data/hub_cache/datasets--AlaminI--nigerian_common_voice_dataset/snapshots/f2185d58a89402ef9ddf139b97437e6d65875599/english/train-00000-of-00001.parquet",
-      "hausa": "/home/okey/Desktop/Projects/volt-intron/benchmarks/data/hub_cache/datasets--AlaminI--nigerian_common_voice_dataset/snapshots/f2185d58a89402ef9ddf139b97437e6d65875599/hausa/train-00000-of-00001.parquet",
-      "igbo": "/home/okey/Desktop/Projects/volt-intron/benchmarks/data/hub_cache/datasets--AlaminI--nigerian_common_voice_dataset/snapshots/f2185d58a89402ef9ddf139b97437e6d65875599/igbo/train-00000-of-00001.parquet",
-      "yoruba": "/home/okey/Desktop/Projects/volt-intron/benchmarks/data/hub_cache/datasets--AlaminI--nigerian_common_voice_dataset/snapshots/f2185d58a89402ef9ddf139b97437e6d65875599/yoruba/train-00000-of-00001.parquet"
+      "english": "/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/hub_cache/datasets--AlaminI--nigerian_common_voice_dataset/snapshots/f2185d58a89402ef9ddf139b97437e6d65875599/english/train-00000-of-00001.parquet",
+      "hausa": "/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/hub_cache/datasets--AlaminI--nigerian_common_voice_dataset/snapshots/f2185d58a89402ef9ddf139b97437e6d65875599/hausa/train-00000-of-00001.parquet",
+      "igbo": "/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/hub_cache/datasets--AlaminI--nigerian_common_voice_dataset/snapshots/f2185d58a89402ef9ddf139b97437e6d65875599/igbo/train-00000-of-00001.parquet",
+      "yoruba": "/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/hub_cache/datasets--AlaminI--nigerian_common_voice_dataset/snapshots/f2185d58a89402ef9ddf139b97437e6d65875599/yoruba/train-00000-of-00001.parquet"
     },
     "naija": [
-      "/home/okey/Desktop/Projects/volt-intron/benchmarks/data/hub_cache/datasets--McGill-NLP--NaijaS2ST/snapshots/4fef5310ef98b8c703e490ea9908100f152ad5b3/data/dev-00000-of-00012.parquet"
+      "/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/hub_cache/datasets--McGill-NLP--NaijaS2ST/snapshots/4fef5310ef98b8c703e490ea9908100f152ad5b3/data/dev-00000-of-00012.parquet"
     ]
   },
-  "manifest": "/home/okey/Desktop/Projects/volt-intron/benchmarks/data/pilot_manifest.csv",
+  "manifest": "/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/pilot_manifest.csv",
   "rows": 60,
   "naija_cap_mb": 1650,
   "seed": 7

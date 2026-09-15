@@ -216,8 +216,10 @@ def summarize(cells: list[dict]) -> dict:
     summary = {}
     for prov, cs in by_prov.items():
         human = [c for c in cs if not is_synthetic(c)]
-        corpus = [c for c in human if c.get("source") != "recorded"]
+        # Track 1 stays the open corpora only; our recordings are scored apart.
+        corpus = [c for c in human if c.get("source") not in ("recorded", "codeswitch")]
         recorded = [c for c in human if c.get("source") == "recorded"]
+        codeswitch = [c for c in human if c.get("source") == "codeswitch"]
         syn = [c for c in cs if is_synthetic(c)]
         cok = [c for c in corpus if c["ok"]]
         s = {
@@ -252,6 +254,7 @@ def summarize(cells: list[dict]) -> dict:
                 [c["money"] for c in recorded if c.get("money")]),
             "synthetic_n": len(syn),
             "recorded_n": len(recorded),
+            "codeswitch": _codeswitch_summary(codeswitch),
         }
         s["credit_est"] = round(
             sum(float(c["audio_sec"]) * CREDITS_PER_AUDIO_SEC for c in cok), 1)
@@ -399,6 +402,44 @@ def _grouped(cells: list[dict], key: str, metric: str = "norm_wer") -> dict:
         g = c.get(key) or "?"
         out.setdefault(g, []).append(c.get(metric, c["norm_wer"]))
     return {g: met.summarize(v) for g, v in out.items()}
+
+
+def _codeswitch_summary(cells: list[dict]) -> dict:
+    """Track 3: WER/CER on code-switched recordings plus the invoice outcome.
+
+    The human reference is also run through the invoice engine. That "ceiling"
+    separates ASR errors from engine/catalogue limits: the conditional exact rate
+    only counts clips where the reference itself yields the exact invoice.
+    Failed provider calls stay in the denominators (scored as empty transcripts).
+    """
+    if not cells:
+        return {"n": 0}
+    ok = [c for c in cells if c["ok"]]
+    roster = mo.load_roster()
+    scenarios = {s["id"]: s for s in mo.load_scenarios()["scenarios"]}
+    reference_exact: dict[str, bool] = {}
+    for c in cells:
+        if c["id"] not in reference_exact and c.get("scenario_id") in scenarios:
+            outcome = mo.score_scenario(c["text_ref"], scenarios[c["scenario_id"]], roster)["outcome"]
+            reference_exact[c["id"]] = outcome == "exact"
+    eligible = [c for c in cells if reference_exact.get(c["id"])]
+    return {
+        "n": len(cells),
+        "ok": len(ok),
+        "audio_sec": round(sum(float(c["duration"]) for c in cells), 1),
+        "speakers": len({c["id"].split("_")[1] for c in cells if c["id"].count("_") >= 2}),
+        "norm_wer": met.summarize([c["norm_wer"] for c in ok]),
+        "norm_cer": met.summarize([c["norm_cer"] for c in ok]),
+        "basic_wer": met.summarize([c["basic_wer"] for c in ok]),
+        "language_wer": _grouped(ok, "language"),
+        "language_cer": _grouped(ok, "language", "norm_cer"),
+        "money_all": mo.summarize_outcomes([c["money"] for c in cells if c.get("money")]),
+        "reference_exact": sum(1 for v in reference_exact.values() if v),
+        "reference_scored": len(reference_exact),
+        "money_given_reference_exact": mo.summarize_outcomes(
+            [c["money"] for c in eligible if c.get("money")]),
+        "latency_s": met.summarize([c["latency_s"] for c in cells]),
+    }
 
 
 def _pct(x, d):
@@ -662,8 +703,24 @@ def main() -> int:
     ap.add_argument("--add-recordings", type=str, default=None,
                     help="import user-recorded money briefs from DIR (see data/created/)")
     ap.add_argument("--add-recordings-mapping", type=str, default=None)
+    ap.add_argument("--codeswitch-template", type=str, default=None,
+                    help="write/extend data/sautibench/references.csv from recorder folders in DIR")
+    ap.add_argument("--add-codeswitch", type=str, default=None,
+                    help="append consented code-switched recordings from DIR (Track 3)")
     args = ap.parse_args()
 
+    if args.codeswitch_template:
+        from .codeswitch import write_reference_template
+        n = write_reference_template(Path(args.codeswitch_template))
+        print(f"[cs] references template has {n} rows; fill reference_text by hand (never from ASR)")
+        return 0
+    if args.add_codeswitch:
+        from .codeswitch import ingest
+        added, skipped = ingest(Path(args.add_codeswitch))
+        print(f"[cs] added {len(added)} code-switched rows")
+        for name, why in skipped:
+            print(f"  [cs] skip {name}: {why}")
+        return 0
     if args.synthesize_tts:
         synth_tts(args)
         return 0

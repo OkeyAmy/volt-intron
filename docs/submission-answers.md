@@ -1,47 +1,49 @@
 # Submission form answers
 
-Drafts for `submissions/form1.md`, each within its stated limit. Every claim traces to the README,
-`docs/research.md`, or a passing test. **Re-check the status table before submitting** — anything
-here written as built must still be built on the day.
+Mirror of the draft in `submissions/form1.md`, each within its stated limit. Every claim traces to
+code on this branch, a live API check, or a cited source. **Anything marked ⟨PENDING⟩ must be filled
+from real results before submitting; never type a number that isn't in `benchmarks/outputs/`.**
 
 ---
 
 ### Solution Title
-`Sautice — voice-to-invoice for Nigerian SMEs`
+`Sautice — speak a sale in Pidgin, Yoruba, Igbo or Hausa mixed with English, get a checked invoice`
 
 ---
 
 ### Q1 · The problem (~50 words)
 
-Nigerian traders speak business in mixed language — *"Abeg invoice Adebayo Stores, five bags,
-twelve-five each"* — switching between English and Yoruba, Igbo, Hausa or Pidgin mid-sentence.
-Typing that is slower than a carbon-copy book, so sales stay undigitised. Voice should fix it, but
-code-switched recognition is too inaccurate for money.
+Nigerian traders sell in mixed speech — *"abeg put five bags Dangote for Adebayo, twelve-five
+each"* — but invoicing tools need typing and English. Typing on a phone mid-sale is slow, and
+misreading spoken money ("twelve-five" is ₦12,500, not ₦125) creates wrong invoices. Voice tools
+built for monolingual English mishear code-switched speech and money.
 
 ---
 
 ### Q2 · Target users and scale (~50 words)
 
-Nigerian SMEs and micro-traders who sell business-to-business and keep records on paper or by
-voice. Nigeria has roughly 40 million MSMEs. Our design target is a mid-range Android phone on
-mobile data in a noisy market, used by someone with no accounting software experience and no
-appetite for forms.
+Owners and sales staff of Nigeria's micro and small businesses — starting with building-materials
+and market traders who sell on credit and need invoices. Nigeria has 39.6 million MSMEs, 87.9% of
+national employment (SMEDAN–NBS National MSME Survey 2021). The flow extends to other markets
+Sahara's code-switched pairs cover.
+
+Source: <https://www.nigerianstat.gov.ng/elibrary/read/966>
 
 ---
 
 ### Q3 · How the app solves it (~50 words)
 
-You speak naturally. Sautice transcribes through Intron Sahara, resolves the customer and products
-against your own list, computes the money deterministically, and asks about anything genuinely
-ambiguous instead of guessing. Nothing is issued until you confirm. The result is a numbered
-invoice with an audit trail.
+The trader taps Start speaking and says the sale naturally. Intron Sahara transcribes the
+code-switched speech; the trader can fix any word. A deterministic invoice engine matches the
+customer and products, reads Nigerian money and quantities exactly, asks a clarifying question when
+unsure, and creates a numbered, shareable, printable invoice after confirmation.
 
 ---
 
 ### Q4 · Does it support code-switching?
 
-**Yes.** Yoruba–English, Igbo–English, Hausa–English and Pidgin–English, via Intron's code-switched
-language codes `yo`, `ig`, `ha` and `pcm`.
+**Yes.** Pidgin–English (`pcm`), Yoruba–English (`yo`), Igbo–English (`ig`), Hausa–English (`ha`),
+plus English, using Sahara's code-switched language codes (docs.voice.intron.io/docs/stt/supported-languages).
 
 ---
 
@@ -56,10 +58,10 @@ against the live API in production.
 
 ### Q6 · How is it agentic? (~50 words)
 
-The transcript is not the output — it drives a task. The agent extracts a transaction, detects what
-is missing or ambiguous, asks a clarifying question in the user's register, recomputes
-deterministically, requires explicit confirmation, then issues an invoice with an audit trail.
-The artefact is a financial document, not text.
+The transcript drives an action: the agent extracts customer, items, quantities, prices and payment
+terms, resolves them against the business's catalogue and customer list, computes totals in integer
+kobo, asks targeted questions for ambiguity (e.g. "₦250, ₦2,500 or ₦250,000?"), and issues a
+version-bound, idempotent invoice once the trader confirms.
 
 ---
 
@@ -93,13 +95,13 @@ confident wrong match is treated as worse than abstaining.
 
 ### Q8 · Ethics and inclusion (~100 words)
 
-Microphone use is explicit and consent-gated. Our recorder collects no free-text field at all —
-speaker IDs are randomly assigned, so no real name can reach the published dataset. User-agent
-strings are bucketed to browser and OS family, and timestamps are day-precision, because a handful
-of speakers plus a fingerprint is not anonymous. Speakers agree to public hosting and may withdraw
-anytime. Every business, customer and product in our evaluation set is invented. API keys stay
-server-side. Raw audio is not retained by default. Uncertainty is shown rather than hidden, and no
-financial action happens without confirmation.
+No autonomous financial action: every invoice needs the trader's confirmation and is a payment
+request, not a charge. Recordings are not stored by the app; the gateway keeps audio in memory only
+(≤60 s) and clears it when the session settles. API keys stay server-side. Benchmark speakers gave
+explicit five-point consent (18+, research use, public release, no real personal data, deletion on
+request), are identified only by random IDs, and can withdraw by ID. Only consented clips were sent
+to third-party ASR providers for benchmarking. Limits: few speakers and Nigerian accents only; some
+providers lack Pidgin/Igbo support.
 
 ---
 

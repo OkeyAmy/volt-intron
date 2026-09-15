@@ -10,6 +10,7 @@ validity claims.
 |---|---|---|---|
 | **Track 1 — ASR quality** | Raw transcription accuracy | WER/CER via `jiwer` over open, human-transcribed corpora, with frozen whisper-normalizer preprocessing, stratified by accent/language | Industry-standard (OpenASR / MLPerf-style). This is the headline number. |
 | **Track 2 — product probe** | Voice → invoice accuracy of the *Sautice stack* | Transcription fed through the Sautice heuristic invoice parser (customer match, quantities, prices); scored exact / off≤10% / catastrophic / blocked | **NOT a benchmark.** Scores conflate ASR + parser and don't transfer outside Sautice. Reported only to guide Sautice's provider choice. |
+| **Track 3 — code-switched speech** | WER/CER and invoice outcome on **code-switched** speech (Pidgin/Yoruba/Igbo/Hausa + English) | Consented recordings from `scripts/recorder`, human verbatim references (`data/sautibench/TRANSCRIPTION.md`), same frozen normalisation; invoice scored over all clips and over clips where the human reference itself yields the exact invoice | A controlled, consented commerce **read-speech** benchmark — not spontaneous conversation. Small n; reported with n, speakers and audio seconds. |
 
 ## Corpus (Track 1)
 
@@ -90,6 +91,32 @@ uv run python -m benchmarks.run \
   --add-recordings benchmarks/data/created \
   --add-recordings-mapping benchmarks/data/created/mapping.json
 ```
+
+## Track 3 — code-switched recordings
+
+1. Speakers record with the consent recorder (served by the app at `/recorder.html`,
+   or `scripts/recorder/sautice-recorder.html`). Each downloads `sautibench_<ID>.zip`.
+2. Unzip each into its own folder under `benchmarks/data/sautibench/recordings/<ID>/`
+   (git-ignored: voice is personal data).
+3. Generate the reference sheet, then have a speaker of the language type every
+   reference by hand, following `data/sautibench/TRANSCRIPTION.md`:
+   `uv run python -m benchmarks.run --codeswitch-template benchmarks/data/sautibench/recordings`
+4. Ingest (skips and lists any clip without consent, a reference, 16 kHz mono audio,
+   or ≤60 s duration):
+   `uv run python -m benchmarks.run --add-codeswitch benchmarks/data/sautibench/recordings`
+5. Run all providers as usual; Track 3 appears in `report.md`.
+
+### Language hints (verified against each API on 2026-09-15)
+
+| Language | Sahara | Groq Whisper | Gemini | ElevenLabs |
+|---|---|---|---|---|
+| Pidgin + English | `pcm` | `en` (no Pidgin code) | prompt names the language | none (API rejects `pcm`) |
+| Yoruba + English | `yo` | `yo` | prompt | `yo` (accepted, not listed in docs) |
+| Igbo + English | `ig` | none (API rejects `ig`) | prompt | `ig` |
+| Hausa + English | `ha` | `ha` | prompt | `ha` |
+
+Each provider gets its best documented configuration, so the comparison is not
+hint-for-hint identical; the report says so.
 
 ## Providers
 

@@ -216,9 +216,19 @@ def read_term_days(text: str) -> int | str | None:
     if m:
         n, unit = int(m.group(1)), m.group(2)
         return n * {"day": 1, "week": 7, "month": 30}[unit]
-    m = re.search(r"\b([a-z ]+?)\s*(day|week|month)s?\b", t)
+    # Only the run of number words directly before the unit counts, so a lead-in
+    # ("dem pay in seven days") cannot swallow the number.
+    m = re.search(r"\b((?:(?:" + _TERM_NUMWORDS + r")[\s-]+)*(?:" + _TERM_NUMWORDS + r"))\s*(day|week|month)s?\b", t)
     if m:
-        n = _words_to_int([w for w in m.group(1).split() if w != "a"]) or (1 if m.group(1).strip() in {"a", ""} else None)
+        words = [w for w in re.split(r"[\s-]+", m.group(1)) if w and w != "a"]
+        n = _words_to_int(words) if words else 1
         if n is not None:
             return n * {"day": 1, "week": 7, "month": 30}[m.group(2)]
     return None
+
+
+_TERM_NUMWORDS = (
+    "zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|"
+    "fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|"
+    "eighty|ninety|hundred|and|a"
+)

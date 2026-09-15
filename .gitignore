@@ -51,3 +51,7 @@ Intron-Multimodal-Benchmarking/
 *.db-wal
 *.db-shm
 web/.data/
+
+# Track 3 consent-recorder uploads (voice = personal data): never commit audio or zips
+benchmarks/data/sautibench/recordings/
+benchmarks/data/sautibench/*.zip
