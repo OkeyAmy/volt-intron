@@ -1,103 +1,106 @@
 # Submission form answers
 
-Drafts for `submissions/form1.md`, each within its stated limit. Every claim traces to the README,
-`docs/research.md`, or a passing test. **Re-check the status table before submitting** — anything
-here written as built must still be built on the day.
+Mirror of the draft in `submissions/form1.md`, each within its stated limit. Every claim traces to
+code on this branch, a live API check, or a cited source. **Anything marked ⟨PENDING⟩ must be filled
+from real results before submitting; never type a number that isn't in `benchmarks/outputs/`.**
 
 ---
 
 ### Solution Title
-`Sautice — voice-to-invoice for Nigerian SMEs`
+`Sautice — speak a sale in Pidgin, Yoruba, Igbo or Hausa mixed with English, get a checked invoice`
 
 ---
 
 ### Q1 · The problem (~50 words)
 
-Nigerian traders speak business in mixed language — *"Abeg invoice Adebayo Stores, five bags,
-twelve-five each"* — switching between English and Yoruba, Igbo, Hausa or Pidgin mid-sentence.
-Typing that is slower than a carbon-copy book, so sales stay undigitised. Voice should fix it, but
-code-switched recognition is too inaccurate for money.
+Nigerian traders sell in mixed speech — *"abeg put five bags Dangote for Adebayo, twelve-five
+each"* — but invoicing tools need typing and English. Typing on a phone mid-sale is slow, and
+misreading spoken money ("twelve-five" is ₦12,500, not ₦125) creates wrong invoices. Voice tools
+built for monolingual English mishear code-switched speech and money.
 
 ---
 
 ### Q2 · Target users and scale (~50 words)
 
-Nigerian SMEs and micro-traders who sell business-to-business and keep records on paper or by
-voice. Nigeria has roughly 40 million MSMEs. Our design target is a mid-range Android phone on
-mobile data in a noisy market, used by someone with no accounting software experience and no
-appetite for forms.
+Owners and sales staff of Nigeria's micro and small businesses — starting with building-materials
+and market traders who sell on credit and need invoices. Nigeria has 39.6 million MSMEs, 87.9% of
+national employment (SMEDAN–NBS National MSME Survey 2021). The flow extends to other markets
+Sahara's code-switched pairs cover.
+
+Source: <https://www.nigerianstat.gov.ng/elibrary/read/966>
 
 ---
 
 ### Q3 · How the app solves it (~50 words)
 
-You speak naturally. Sautice transcribes through Intron Sahara, resolves the customer and products
-against your own list, computes the money deterministically, and asks about anything genuinely
-ambiguous instead of guessing. Nothing is issued until you confirm. The result is a numbered
-invoice with an audit trail.
+The trader taps Start speaking and says the sale naturally. Intron Sahara transcribes the
+code-switched speech; the trader can fix any word. A deterministic invoice engine matches the
+customer and products, reads Nigerian money and quantities exactly, asks a clarifying question when
+unsure, and creates a numbered, shareable, printable invoice after confirmation.
 
 ---
 
 ### Q4 · Does it support code-switching?
 
-**Yes.** Yoruba–English, Igbo–English, Hausa–English and Pidgin–English, via Intron's code-switched
-language codes `yo`, `ig`, `ha` and `pcm`.
+**Yes.** Pidgin–English (`pcm`), Yoruba–English (`yo`), Igbo–English (`ig`), Hausa–English (`ha`),
+plus English, using Sahara's code-switched language codes (docs.voice.intron.io/docs/stt/supported-languages).
 
 ---
 
 ### Q5 · Does it use the Sahara APIs?
 
-**Yes.** Streaming STT at `wss://infer.voice.intron.io/stt/v1/stream` with
-`use_language_asr_input` set to a code-switched code, the file endpoint as a fallback, and Intron
-TTS for spoken replies. Verified working against the live API.
+**Yes.** Sahara streaming STT (`wss://infer.voice.intron.io/stt/v1/stream`, `web/server.mts`) as the
+live path, and Sahara synchronous file STT (`POST https://infer.voice.intron.io/file/v1/upload/sync`,
+`web/src/lib/speech/intron-file.ts`) as the gateway's fallback and the serverless upload path.
+Both verified with real recordings.
 
 ---
 
 ### Q6 · How is it agentic? (~50 words)
 
-The transcript is not the output — it drives a task. The agent extracts a transaction, detects what
-is missing or ambiguous, asks a clarifying question in the user's register, recomputes
-deterministically, requires explicit confirmation, then issues an invoice with an audit trail.
-The artefact is a financial document, not text.
+The transcript drives an action: the agent extracts customer, items, quantities, prices and payment
+terms, resolves them against the business's catalogue and customer list, computes totals in integer
+kobo, asks targeted questions for ambiguity (e.g. "₦250, ₦2,500 or ₦250,000?"), and issues a
+version-bound, idempotent invoice once the trader confirms.
 
 ---
 
 ### Q7 · Technical overview and tradeoffs (~250 words)
 
-Code-switched African ASR is roughly 35% WER — Intron publishes 34.3% for Sahara v2.5, and the
-AfriSwitch benchmark's best system averages 35.93%. So the engineering problem is not transcription.
-It is making a financial action safe on top of an unreliable transcript. Three decisions follow,
-each stated as constraint, decision and cost.
+**1. Deterministic money engine, not an LLM, for amounts.** Extraction, catalogue matching and naira
+parsing are rule-based (Python engine with a tested TypeScript port) and every figure is integer
+kobo. Tradeoff: less flexible phrasing than an LLM, but it never invents a price, and ambiguity
+becomes a question instead of a silent error — the right failure mode for money.
 
-**Deterministic financial core with a typed action boundary.** Groq's strict JSON-schema mode cannot
-be combined with tool-calling, which forced the safer shape: the model emits typed actions as data
-and a deterministic executor validates and applies them. The model never computes a total. Money is
-an integer count of kobo that rejects floats, because float arithmetic loses fractions of a kobo and
-produces totals nobody agreed to. The cost is autonomy — a novel request becomes a clarification
-rather than an improvisation.
+**2. Server-side voice gateway.** Sahara authenticates its WebSocket with an `Authorization` header
+that browsers cannot set, so a Node gateway (Next.js custom server + `ws`) holds the key and relays
+16 kHz PCM16 captured by an AudioWorklet. Tradeoff: needs a persistent host (Render) rather than
+pure serverless; on Vercel we fall back to record-then-upload.
 
-**Uncertainty-preserving confirmation.** Our parser returns one value or an ambiguity set, never an
-invented number. *"Two fifty"* yields ₦250, ₦2,500 and ₦250,000 and forces a question; *"twelve-five"*
-resolves cleanly to ₦12,500. Amounts and new payees require explicit confirmation. The cost is extra
-turns, traded against silent financial errors.
+**3. Streaming first, Sahara file API as fallback.** Live partials make speaking feel responsive;
+when the stream fails recoverably (seen in production as a WebSocket FIN error through proxies) the
+gateway keeps a bounded 60-second buffer and transcribes it with Sahara's sync file endpoint, so
+the recording is not lost. Tradeoff: extra memory per session and a slower result when degraded.
 
-**Tenant-scoped entity resolution with an abstain state.** A mangled customer name has no reliable
-open-vocabulary reading, so we resolve only against entities the business owns, accept on a score
-margin, and otherwise ask. This is an authorization boundary, not similarity scoring. The cost is
-that genuinely new customers cannot be resolved — so "this is new" is a first-class outcome, and a
-confident wrong match is treated as worse than abstaining.
+**4. Human-in-the-loop, version-bound confirmation.** The trader sees and can edit the transcript,
+reviews the draft, and confirms; confirmation is bound to the draft version and an idempotency key,
+so a changed draft or a double tap cannot issue a wrong or duplicate invoice. Tradeoff: one more
+tap, in exchange for trust.
+
+**5. Postgres (Neon) in production, SQLite locally**, with typed "not configured" errors instead of
+crashes.
 
 ---
 
 ### Q8 · Ethics and inclusion (~100 words)
 
-Microphone use is explicit and consent-gated. Our recorder collects no free-text field at all —
-speaker IDs are randomly assigned, so no real name can reach the published dataset. User-agent
-strings are bucketed to browser and OS family, and timestamps are day-precision, because a handful
-of speakers plus a fingerprint is not anonymous. Speakers agree to public hosting and may withdraw
-anytime. Every business, customer and product in our evaluation set is invented. API keys stay
-server-side. Raw audio is not retained by default. Uncertainty is shown rather than hidden, and no
-financial action happens without confirmation.
+No autonomous financial action: every invoice needs the trader's confirmation and is a payment
+request, not a charge. Recordings are not stored by the app; the gateway keeps audio in memory only
+(≤60 s) and clears it when the session settles. API keys stay server-side. Benchmark speakers gave
+explicit five-point consent (18+, research use, public release, no real personal data, deletion on
+request), are identified only by random IDs, and can withdraw by ID. Only consented clips were sent
+to third-party ASR providers for benchmarking. Limits: few speakers and Nigerian accents only; some
+providers lack Pidgin/Igbo support.
 
 ---
 
@@ -105,7 +108,8 @@ financial action happens without confirmation.
 
 | Field | Value |
 |---|---|
-| Demo video | *pending* — must show code-switching, ≤5 min, public or unlisted |
-| Benchmark report | *pending* — hosted PDF, max 3 pages |
-| Benchmark audio | *pending* — HuggingFace, consented and de-identified |
+| Website | ⟨PENDING: public Render URL⟩ |
+| Demo video | ⟨PENDING⟩ — must show real code-switching, ≤5 min, public or unlisted |
+| Benchmark report | ⟨PENDING⟩ — `benchmarks/report/build_report.py` output, hosted PDF, max 3 pages |
+| Benchmark audio | ⟨PENDING⟩ — HuggingFace, consented and de-identified |
 | Code | https://github.com/OkeyAmy/volt-intron |
