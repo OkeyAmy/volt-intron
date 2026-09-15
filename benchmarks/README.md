@@ -26,6 +26,24 @@ test time — the 16k mono wavs live on disk.
 Verify the manifest: `uv run python -m benchmarks.load_data --info` (or read
 `benchmarks/data/pilot_manifest.csv`).
 
+## References — data sources
+
+| Source | Link | Usage here |
+|---|---|---|
+| Nigerian pidgin v1.0 | https://huggingface.co/datasets/asr-nigerian-pidgin/nigerian-pidgin-1.0 | 10 clips (train split) |
+| AlaminI Nigerian Common Voice | https://huggingface.co/datasets/AlaminI/nigerian_common_voice_dataset | 20 clips, 5 per language: english/hausa/igbo/yoruba (train split) |
+| McGill-NLP NaijaS2ST | https://huggingface.co/datasets/McGill-NLP/NaijaS2ST | 30 clips, EN ×15 + EY ×15 (dev split, dev-00000) |
+| Intron Multimodal Benchmarking (methodology colone) | https://github.com/intron-innovation/Intron-Multimodal-Benchmarking | Reference harness + published per-language WER baselines (Sahara, Gemini, Whisper-derived) for cross-checks |
+
+Methodology references: NIST OpenASR evaluation plan (sclite WER/CER scoring)
+https://www.nist.gov/itl/iad/mltg/openasr-challenge · Open ASR Leaderboard
+(WER + RTFx, normalization, transparency) https://arxiv.org/abs/2510.06961 ·
+Gladia benchmarking guide https://docs.gladia.io/chapters/pre-recorded-stt/benchmarking ·
+AssemblyAI how-to-evaluate https://www.assemblyai.com/blog/how-to-evaluate-speech-recognition-models
+
+Splits/licenses are as declared on each Hugging Face dataset card; the
+`dev` vs `train` split selection is frozen in `pilot_manifest_info.json`.
+
 ## Track 2 assets
 
 - **Recorded briefs** (primary): the repository owner's own voice, reading the
