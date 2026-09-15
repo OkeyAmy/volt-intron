@@ -95,3 +95,55 @@ prints redacted diagnostics, and exits non-zero on failure.
 
 See `web/tests/intron-stream.test.ts` for the regression matrix and
 `web/tests/wav.test.ts` for the resampler fix.
+
+## Production incident: "Invalid WebSocket frame: FIN must be set"
+
+On the Render deployment, recording from a phone intermittently failed with
+`Invalid WebSocket frame: FIN must be set` (the `ws` library's
+`WS_ERR_EXPECTED_FIN`). The WebSocket spec forbids fragmented control frames; some
+proxies between the gateway and Intron deliver a control frame with FIN unset, and
+`ws` rejects it — a **transport/protocol** failure, not bad audio. It surfaced as a
+raw error and destroyed the recording.
+
+### Fix: an Intron **file-transcription fallback** (same provider, different transport)
+
+Streaming stays the primary path. The gateway now also keeps a **bounded in-memory
+copy** of the current utterance (PCM16, capped at 60s ≈ 1.92 MB — fits Intron's 120s
+file limit). On a **recoverable** streaming failure the recording is not lost:
+
+- **breaks while speaking** → the gateway marks the session degraded and tells the
+  browser *"Keep speaking — we'll process your recording when you stop."*; the mic
+  keeps recording and buffering.
+- **breaks after Stop/commit** → the gateway immediately runs the fallback.
+
+The fallback (`web/src/lib/speech/intron-file.ts`) wraps the buffered PCM into a WAV
+with the app's own `encodeWav` (no ffmpeg) and POSTs it to Intron's sync file API
+(`POST https://infer.voice.intron.io/file/v1/upload/sync`, multipart
+`audio_file_name`/`audio_file_blob`/`use_language_asr_input`, `Authorization: Bearer`,
+transcript at `data.audio_transcript`). This is **still Sahara/Intron** — no other
+provider is introduced.
+
+### Error classification
+
+| Class | Codes | Behaviour |
+|---|---|---|
+| Recoverable transport | `WS_ERR_EXPECTED_FIN`/`SOCKET_ERROR`, `CLOSED_EARLY`, `CONNECT_TIMEOUT`, `READY_TIMEOUT`, `FINALIZE_TIMEOUT`, 5xx/429 on file | keep the recording → file fallback |
+| Non-recoverable | `AUTHENTICATION_ERROR`, `QUOTA_EXCEEDED`, bad input | no retry/fallback; friendly "type instead" |
+
+The user never sees a raw code — `web/src/lib/speech/errors.ts` maps everything to a
+calm message. One transcript result wins (stream **or** file).
+
+### Retry budget
+
+Two layers were collapsed: the browser reconnects only if the **browser→gateway**
+socket fails before a session; recovery from Intron's own transport errors is the
+**gateway's** job (fallback), so the browser no longer reconnects on an upstream
+error — preventing a retry storm.
+
+### Verified
+
+- Unit: `web/tests/intron-file.test.ts` (WAV validity, multipart + Bearer, key never
+  in URL/body, 401→non-recoverable, 429/5xx→recoverable, no-transcript, timeout) and
+  the error-mapper. Mocked fetch — no credits spent.
+- Live: a real recording sent through the **file API** returned a correct transcript
+  (≈9.6s audio, ~12s latency), confirming the fallback end to end.
