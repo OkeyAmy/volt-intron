@@ -27,6 +27,26 @@ fixtures/*.wav
 .DS_Store
 incoming/
 
+# benchmark downloads — multi-GB, regenerable via  benchmarks.load_data
+benchmarks/data/hub_cache/
+
+# user-recorded money briefs (voice = PII) and their derived 16k wavs
+benchmarks/data/created/*.m4a
+benchmarks/data/created/*.wav
+benchmarks/data/created/*.mp3
+benchmarks/data/audio/16k/recorded_*.wav
+
+# TTS clips — AI-synthesized, regenerable (costs credits to recreate)
+benchmarks/data/sautibench/tts/
+
+# outputs: commit aggregate evidence (report.md, results.json, cost.json) only;
+# per-cell transcripts stay local, and the credit cache is local-only
+benchmarks/outputs/cache/
+benchmarks/outputs/*/per_cell.jsonl
+
+# third-party reference clone (re-clone from source instead of vendoring)
+Intron-Multimodal-Benchmarking/
+
 # invoice store (local SQLite) and generated assets
 *.db
 *.db-wal

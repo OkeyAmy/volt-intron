@@ -1,0 +1,12 @@
+{
+  "note": "testN audio -> SautiBench scenario id, inferred from Sahara transcript content. null = held out of scoring until confirmed.",
+  "test1": {"scenario_id": "s01", "confirmed": true},
+  "test2": {"scenario_id": "s02", "confirmed": true},
+  "test3": {"scenario_id": "s03", "confirmed": true},
+  "test4": {"scenario_id": null, "confirmed": false, "reason": "ASR returned empty; re-record or confirm"},
+  "test5": {"scenario_id": "s05", "confirmed": true},
+  "test6": {"scenario_id": "s13", "confirmed": true},
+  "test7": {"scenario_id": "s28", "confirmed": true},
+  "test8": {"scenario_id": null, "confirmed": false, "reason": "no customer heard; could be s16/s22/s25/s30 family"},
+  "test9": {"scenario_id": "s15", "confirmed": true}
+}

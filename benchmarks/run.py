@@ -1,0 +1,455 @@
+"""Phase 3: orchestration - providers x cells, cached scoring, report.
+
+Usage:
+    uv run python -m benchmarks.run --providers intron_sahara --tag smoke --max-cells 12
+    uv run python -m benchmarks.run --tag pilot            # all configured providers
+    uv run python -m benchmarks.run --synthesize-tts       # materialize TTS clips first
+
+Guarantees:
+  - results cached per (provider, audio_hash); re-runs never re-spend credits
+  - Intron spend estimated (0.44 credits/audio-s) and hard-stopped at --balance 200
+  - per_cell.jsonl, results.json, and model-card report.md written to outputs/<tag>/
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+import hashlib
+import json
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+from .eval import metrics as met
+from .eval import money_outcome as mo
+from .providers import resolve_providers
+from .providers.intron_sahara import CREDITS_PER_AUDIO_SEC
+
+load_dotenv()
+
+BENCH = Path(__file__).resolve().parent
+DATA = BENCH / "data"
+MANIFEST = DATA / "pilot_manifest.csv"
+OUTPUTS = BENCH / "outputs"
+CACHE = OUTPUTS / "cache"
+
+
+def load_rows() -> list[dict]:
+    with open(MANIFEST) as f:
+        return list(csv.DictReader(f))
+
+
+def audio_hash(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        h.update(f.read())
+    return h.hexdigest()[:16]
+
+
+def cache_key(provider: str, ahash: str) -> Path:
+    return CACHE / f"{provider}_{ahash}.json"
+
+
+def load_cached(provider: str, ahash: str) -> dict | None:
+    p = cache_key(provider, ahash)
+    if p.exists():
+        return json.loads(p.read_text())
+    return None
+
+
+def store_cached(provider: str, ahash: str, data: dict) -> None:
+    CACHE.mkdir(parents=True, exist_ok=True)
+    cache_key(provider, ahash).write_text(json.dumps(data, ensure_ascii=False))
+
+
+def estimate_credits(rows: list[dict]) -> float:
+    return sum(float(r["duration"]) * CREDITS_PER_AUDIO_SEC for r in rows)
+
+
+def run(args) -> tuple[list[dict], dict]:
+    rows = load_rows()
+    if args.max_cells:
+        rows = rows[: args.max_cells]
+    providers = resolve_providers(args.providers)
+    if not providers:
+        print("[-] no providers available (check env keys); nothing to do")
+        return [], {"burn": 0.0, "fresh": 0, "cache_hits": 0}
+
+    roster = mo.load_roster()
+    scenarios = {s["id"]: s for s in mo.load_scenarios()["scenarios"]}
+
+    n_audio = sum(1 for r in rows if not is_synthetic(r) and Path(r["audio_path"]).exists())
+    est = estimate_credits([r for r in rows if not is_synthetic(r)])
+    print(f"[run] cells={len(rows)} (human={n_audio}, synthetic={len(rows) - n_audio}) "
+          f"est. <= {est:.0f} Intron credits (0.44/audio-s)")
+    if est > args.cost_warn and args.balance:
+        print(f"  !! est. spend {est:.0f} > warn {args.cost_warn}; pass --cost-warn to override")
+        if est > args.balance - 200:
+            print(f"  !! est. spend would push balance under 200 (balance={args.balance}); aborting")
+            return []
+
+    cells = []
+    burn = 0.0
+    fresh = 0
+    cache_hits = 0
+    for row in rows:
+        if not Path(row["audio_path"]).exists():
+            print(f"  [!] missing audio: {row['audio_path']} - skip")
+            continue
+        ah = audio_hash(row["audio_path"])
+        is_syn = is_synthetic(row)
+        for name, prov in providers.items():
+            cached = load_cached(name, ah)
+            if cached and cached.get("audio") == row["audio_path"]:
+                repl = cached
+                cache_hits += 1
+                print(f"  [cache] {name} {row['id']}")
+            else:
+                if name == "intron_sahara" and not is_syn:
+                    cost = float(row["duration"]) * CREDITS_PER_AUDIO_SEC
+                    if args.balance and args.balance - burn - cost < 200:
+                        print(f"  [stop] projected balance < 200 after {name}/{row['id']}; "
+                              f"hard-stop active")
+                        continue
+                    burn += cost
+                fresh += 1
+                rep = prov.transcribe(row["audio_path"], row["language"],
+                                      source=row["source"], timeout_s=args.timeout)
+                repl = rep.to_dict()
+                if repl.get("ok"):
+                    store_cached(name, ah, repl)
+                print(f"  [ok]   {name} {row['id']} {repl['ok']} "
+                      f"{str(repl.get('error') or '')[:60]}")
+
+            cell = {**row, **repl}
+            cell["audio_hash"] = ah
+            cell.update(met.cell_metrics(row["text_ref"], repl.get("text", ""), row["language"]))
+
+            if row.get("scenario_id") in scenarios and row["scenario_id"]:
+                cell["money"] = mo.score_scenario(
+                    repl.get("text", ""), scenarios[row["scenario_id"]], roster)
+            else:
+                cell["money"] = mo.diagnose_transcript(repl.get("text", ""), roster)
+            cells.append(cell)
+
+    stats = {"burn": round(burn, 2), "fresh": fresh, "cache_hits": cache_hits}
+    print(f"[run] done: {len(cells)} cells, est fresh Intron burn this run ~{burn:.1f} credits")
+    return cells, stats
+
+
+def is_synthetic(row: dict) -> bool:
+    return row.get("source", "") == "synthetic"
+
+
+def write_outputs(tag: str, cells: list[dict], rows: list[dict],
+                  balance: float | None = None, run_cost: dict | None = None) -> dict:
+    out_dir = OUTPUTS / tag
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    with open(out_dir / "per_cell.jsonl", "w") as f:
+        for c in cells:
+            f.write(json.dumps(c, ensure_ascii=False, default=str) + "\n")
+
+    summary = summarize(cells)
+    cost = {
+        "intron_est_credits_all_cells": round(
+            sum(float(c["audio_sec"]) * CREDITS_PER_AUDIO_SEC
+                for c in cells if c["provider"] == "intron_sahara"), 2),
+        "audio_seconds_by_provider": {
+            p: round(sum(float(c["audio_sec"]) for c in cells if c["provider"] == p), 2)
+            for p in sorted({c["provider"] for c in cells})
+        },
+        "fresh_cells_this_run": (run_cost or {}).get("fresh", 0),
+        "cache_hits_this_run": (run_cost or {}).get("cache_hits", 0),
+        "est_fresh_intron_credits_this_run": (run_cost or {}).get("burn", 0.0),
+        "balance_snapshot": balance,
+    }
+    results = {
+        "tag": tag,
+        "cells": len(cells),
+        "providers": sorted({c["provider"] for c in cells}),
+        "summary": summary,
+        "cost": cost,
+        "committed_rows": len(rows),
+    }
+    (out_dir / "results.json").write_text(json.dumps(results, indent=2, default=str))
+    (out_dir / "cost.json").write_text(json.dumps(cost, indent=2))
+    (out_dir / "report.md").write_text(render_report(tag, summary))
+    print(f"[out] {out_dir}")
+    return summary
+
+
+def summarize(cells: list[dict]) -> dict:
+    by_prov: dict = {}
+    for c in cells:
+        by_prov.setdefault(c["provider"], []).append(c)
+
+    summary = {}
+    for prov, cs in by_prov.items():
+        human = [c for c in cs if not is_synthetic(c)]
+        corpus = [c for c in human if c.get("source") != "recorded"]
+        recorded = [c for c in human if c.get("source") == "recorded"]
+        syn = [c for c in cs if is_synthetic(c)]
+        s = {
+            "n": len(corpus),
+            "norm_wer": met.summarize([c["norm_wer"] for c in corpus if c["ok"]]),
+            "norm_cer": met.summarize([c["norm_cer"] for c in corpus if c["ok"]]),
+            "basic_wer": met.summarize([c["basic_wer"] for c in corpus if c["ok"]]),
+            "recorded_wer": met.summarize([c["norm_wer"] for c in recorded if c["ok"]]),
+            "ok_rate": round(sum(1 for c in cs if c["ok"]) / len(cs), 4) if cs else None,
+            "latency_s": met.summarize([c["latency_s"] for c in cs]),
+            "accent_breakdown": _grouped([c for c in corpus], "accent"),
+            "source_breakdown": _grouped([c for c in corpus], "source"),
+            "language_breakdown": _grouped([c for c in corpus], "language"),
+            "money": mo.summarize_outcomes([c["money"] for c in cs if c.get("money")]),
+            "money_scenario": mo.summarize_outcomes(
+                [c["money"] for c in cs if c.get("money") and not is_synthetic(c)]),
+            "money_synthetic": mo.summarize_outcomes(
+                [c["money"] for c in syn if c.get("money")]),
+            "money_recorded": mo.summarize_outcomes(
+                [c["money"] for c in recorded if c.get("money")]),
+            "synthetic_n": len(syn),
+            "recorded_n": len(recorded),
+        }
+        s["credit_est"] = round(
+            sum(float(c["audio_sec"]) * CREDITS_PER_AUDIO_SEC for c in corpus), 1)
+        summary[prov] = s
+    return summary
+
+
+def _grouped(cells: list[dict], key: str) -> dict:
+    out = {}
+    for c in cells:
+        g = c.get(key) or "?"
+        out.setdefault(g, []).append(c["norm_wer"])
+    return {g: met.summarize(v) for g, v in out.items()}
+
+
+def _pct(x, d):
+    return f"{x / d * 100:.1f}%" if d else "-"
+
+
+def render_report(tag: str, summary: dict) -> str:
+    lines = [f"# Sautice STT Benchmark — `{tag}`", ""]
+    lines.append(f"Generated: {os.environ.get('BENCH_TODAY', '') or __import__('datetime').date.today().isoformat()}")
+    lines.append("")
+    lines.append("Two tracks, distinct validity claims:")
+    lines.append("- **Track 1 — ASR quality (industry-standard metrics).** WER/CER via `jiwer` "
+                 "with frozen whisper-normalizer preprocessing over open, human-transcribed "
+                 "corpora (Nigerian Common Voice subset, NaijaS2ST, Nigerian pidgin), "
+                 "stratified by accent/language. Comparable to OpenASR/MLPerf-style reporting.")
+    lines.append("- **Track 2 — Sautice product probe (NOT a benchmark).** End-to-end "
+                 "voice→invoice accuracy of the Sautice stack (ASR + Sautice heuristic parser). "
+                 "Scores conflate both systems and are not comparable outside Sautice; "
+                 "reported for downstream-provider decisions only.")
+    lines.append("")
+    lines.append("## Track 1 — ASR quality (standard)")
+    lines.append("| provider | n (corpus) | norm WER (95% CI) | norm CER | basic WER | latency | cost est. (cr) |")
+    lines.append("|---|---|---|---|---|---|---|")
+    for prov, s in sorted(summary.items()):
+        w = s["norm_wer"]
+        wstr = f"{w['mean']*100:.1f}% (±{w['ci95']*100:.1f})" if (w["mean"] is not None and w["ci95"] is not None) else "-"
+        c = s["norm_cer"]
+        cstr = f"{c['mean']*100:.1f}%" if c["mean"] is not None else "-"
+        b = s["basic_wer"]
+        bstr = f"{b['mean']*100:.1f}%" if b["mean"] is not None else "-"
+        l = s["latency_s"]
+        lstr = f"{l['mean']:.1f}s" if l["mean"] is not None else "-"
+        lines.append(f"| {prov} | {s['n']} | {wstr} | {cstr} | {bstr} | "
+                     f"{lstr} | {s['credit_est']} |")
+    lines.append("")
+    lines.append("### Track 1 — accent / language / source breakdown (norm WER)")
+    for prov, s in sorted(summary.items()):
+        lines.append(f"**{prov}**")
+        for key, label in (("accent_breakdown", "accent"), ("language_breakdown", "language"),
+                           ("source_breakdown", "source")):
+            row = " · ".join(f"{g} {v['mean']*100:.1f}% (n={v['n']})"
+                             for g, v in sorted(s[key].items()) if v["mean"] is not None)
+            lines.append(f"- {label}: {row}")
+        lines.append("")
+    lines.append("## Track 2 — Sautice product probe (ASR + Sautice parser; separate validity)")
+    lines.append("| provider | n | exact | off≤10% | catastrophic>10% | blocked | exact rate |")
+    lines.append("|---|---|---|---|---|---|---|")
+    for label, bucket in (("recorded briefs", "money_recorded"),
+                          ("synthetic TTS (deprecated)", "money_synthetic")):
+        for prov, s in sorted(summary.items()):
+            m = s.get(bucket) or {}
+            if not m.get("n"):
+                continue
+            cells_txt = " | ".join(str(m.get(k, 0)) for k in
+                                   ("exact", "off_small", "catastrophic", "blocked"))
+            lines.append(f"| {prov} {label} | {m['n']} | {cells_txt} | {_pct(m.get('exact',0), m.get('n',0))} |")
+    lines.append("")
+    lines.append(f"Supplementary: recorded briefs paired corpus WER = "
+                 f"{summary[list(summary)[0]]['recorded_wer']['mean']*100:.1f}% (n={summary[list(summary)[0]]['recorded_n']}) "
+                 if summary and summary[list(summary)[0]]["recorded_n"] else "")
+    lines.append("")
+    lines.append("Notes: Track 2 blocked rows are cases the parser could not resolve (ASR "
+                 "hallucination or normalization gap in Sautice customer matching). "
+                 "Recorded rows are live human recordings of the SautiBench money briefs; "
+                 "synthetic rows are Intron-TTS clips retained as an auxiliary signal.")
+    return "\n".join(lines) + "\n"
+
+
+def synth_tts(args) -> None:
+    sys.path.insert(0, str(BENCH))
+    from .eval.sautibench_tts import resample_16k_manifest_rows, synthesize_scenarios
+
+    print("[tts] synthesizing scenario briefs (live Intron TTS, slow, costs credits)...")
+    rows = synthesize_scenarios(ids=args.tts_ids, force=args.tts_force, debug=args.tts_debug)
+    resample_16k_manifest_rows(rows)
+    _merge_tts_into_manifest(rows)
+    print(f"[tts] done: {len(rows)} clips")
+
+
+def _merge_tts_into_manifest(rows: list[dict]) -> None:
+    """Append synthesized scenario clips to the pilot manifest as synthetic rows
+    (canonical 16k mono path), so the runner scores their money outcome."""
+    import numpy as np
+    import soundfile as sf
+
+    existing = {r["id"]: r for r in load_rows()}
+    for r in rows:
+        sid16k = r["audio_path_16k"]
+        info = sf.info(sid16k)
+        vid = f"tts_{r['scenario_id']}"
+        existing[vid] = {
+            "id": vid,
+            "audio_path": sid16k,
+            "duration": str(round(info.duration, 3)),
+            "text_ref": r["text_ref"],
+            "language": r["language"],
+            "accent": r["accent"],
+            "root": "sautibench",
+            "source": "synthetic",
+            "scenario_id": r["scenario_id"],
+        }
+    header = ["id", "audio_path", "duration", "text_ref", "language",
+              "accent", "root", "source", "scenario_id"]
+    rows_sorted = sorted(existing.values(),
+                         key=lambda x: (x["source"] == "synthetic", x["id"]))
+    with open(MANIFEST, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=header)
+        w.writeheader()
+        w.writerows(rows_sorted)
+    n_syn = sum(1 for r in existing.values() if r["source"] == "synthetic")
+    print(f"[tts] merged manifest: {len(existing)} rows ({n_syn} synthetic)")
+
+
+def add_recordings(directory: str, mapping_path: str | None = None) -> None:
+    """Import your own recordings of the SautiBench money briefs.
+
+    Each audio file is mapped to a scenario id via:
+      - a filename like sXX.ext (scenario inferred), else
+      - benchmarks/data/created/mapping.json keyed by filename stem.
+    Clips are ffmpeg-converted to canonical 16k mono wav, appended to the
+    manifest as source="recorded" human cells, and scored on money outcome.
+    Unconfirmed mappings are skipped with a warning.
+    """
+    import soundfile as sf
+
+    from .eval.sautibench_tts import _scenarios, _tts_prompt
+
+    src_dir = Path(directory)
+    if not src_dir.is_dir():
+        print(f"[-] no such dir: {src_dir}")
+        return
+
+    mapping = None
+    if mapping_path and Path(mapping_path).exists():
+        mapping = json.loads(Path(mapping_path).read_text())
+
+    prompts = {s["id"]: _tts_prompt(s) for s in _scenarios()}
+
+    existing = load_rows()
+    by_id = {r["id"]: r for r in existing}
+    added, skipped = [], []
+    dst_dir = DATA / "audio" / "16k"
+    dst_dir.mkdir(parents=True, exist_ok=True)
+
+    for f in sorted(src_dir.iterdir()):
+        if not f.is_file() or f.suffix.lower() in {".json", ".md", ".txt"}:
+            continue
+        stem = f.stem
+        sid = None
+        if stem.startswith("s") and stem[1:].isdigit():
+            sid = f"s{stem[1:]:0>2}"
+        elif mapping:
+            entry = mapping.get(stem) or {}
+            if entry.get("confirmed"):
+                sid = entry.get("scenario_id")
+        if not sid or sid not in prompts:
+            skipped.append((f.name, "unconfirmed mapping / unknown scenario"))
+            continue
+
+        vid = f"rec_{sid}"
+        dst = dst_dir / f"recorded_{sid}.wav"
+        if not dst.exists() or dst.stat().st_mtime < f.stat().st_mtime:
+            subprocess.run(
+                ["ffmpeg", "-y", "-v", "error", "-i", str(f),
+                 "-ar", "16000", "-ac", "1", "-c:a", "pcm_s16le", str(dst)],
+                check=True)
+        info = sf.info(dst)
+        by_id[vid] = {
+            "id": vid,
+            "audio_path": str(dst),
+            "duration": str(round(info.duration, 3)),
+            "text_ref": prompts[sid],
+            "language": "english",
+            "accent": "recorded",
+            "root": "sautibench",
+            "source": "recorded",
+            "scenario_id": sid,
+        }
+        added.append(vid)
+
+    header = ["id", "audio_path", "duration", "text_ref", "language",
+              "accent", "root", "source", "scenario_id"]
+    with open(MANIFEST, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=header)
+        w.writeheader()
+        w.writerows(sorted(by_id.values(), key=lambda x: x["id"]))
+    n_rec = sum(1 for r in by_id.values() if r["source"] == "recorded")
+    print(f"[rec] merged {len(added)} recorded rows (manifest={len(by_id)}, recorded={n_rec})")
+    for name, why in skipped:
+        print(f"  [rec] skip {name}: {why}")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Sautice STT benchmark runner")
+    ap.add_argument("--providers", nargs="*", default=None,
+                    help="default: all configured (intron_sahara groq_whisper gemini elevenlabs)")
+    ap.add_argument("--tag", default="pilot")
+    ap.add_argument("--max-cells", type=int, default=None)
+    ap.add_argument("--timeout", type=int, default=300)
+    ap.add_argument("--balance", type=float, default=1530.0, help="Intron credit balance")
+    ap.add_argument("--cost-warn", type=float, default=450.0)
+    ap.add_argument("--no-report", action="store_true")
+    ap.add_argument("--synthesize-tts", action="store_true")
+    ap.add_argument("--tts-ids", nargs="*", default=None)
+    ap.add_argument("--tts-force", action="store_true")
+    ap.add_argument("--tts-debug", action="store_true")
+    ap.add_argument("--add-recordings", type=str, default=None,
+                    help="import user-recorded money briefs from DIR (see data/created/)")
+    ap.add_argument("--add-recordings-mapping", type=str, default=None)
+    args = ap.parse_args()
+
+    if args.synthesize_tts:
+        synth_tts(args)
+        return 0
+    if args.add_recordings:
+        add_recordings(args.add_recordings, args.add_recordings_mapping)
+        return 0
+
+    cells, run_cost = run(args)
+    if not cells:
+        return 1
+    write_outputs(args.tag, cells, load_rows(), balance=args.balance, run_cost=run_cost)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
