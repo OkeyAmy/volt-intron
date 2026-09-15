@@ -8,6 +8,7 @@ import { confirmDraft } from "@/lib/invoice/store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 30; // allow a serverless DB cold start (Neon idle wake)
 
 export async function POST(req: Request) {
   let body: { draftId?: string; version?: number; idempotencyKey?: string };
@@ -18,18 +19,23 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: "draftId, version and idempotencyKey are required" }, { status: 400 });
   }
 
-  const r = await confirmDraft({ draftId, version, idempotencyKey });
-  switch (r.status) {
-    case "not_found":
-      return Response.json({ ok: false, error: "draft not found" }, { status: 404 });
-    case "version_conflict":
-      return Response.json({ ok: false, error: "This draft changed after you reviewed it. Reload and check the numbers.", currentVersion: r.currentVersion }, { status: 409 });
-    case "not_ready":
-      return Response.json({ ok: false, error: "This draft still has questions to answer." }, { status: 400 });
-    default:
-      return Response.json(
-        { ok: true, duplicate: r.status === "duplicate", invoice: { id: r.invoice.id, number: r.invoice.number } },
-        { status: r.status === "created" ? 201 : 200 },
-      );
+  try {
+    const r = await confirmDraft({ draftId, version, idempotencyKey });
+    switch (r.status) {
+      case "not_found":
+        return Response.json({ ok: false, error: "draft not found" }, { status: 404 });
+      case "version_conflict":
+        return Response.json({ ok: false, error: "This draft changed after you reviewed it. Reload and check the numbers.", currentVersion: r.currentVersion }, { status: 409 });
+      case "not_ready":
+        return Response.json({ ok: false, error: "This draft still has questions to answer." }, { status: 400 });
+      default:
+        return Response.json(
+          { ok: true, duplicate: r.status === "duplicate", invoice: { id: r.invoice.id, number: r.invoice.number } },
+          { status: r.status === "created" ? 201 : 200 },
+        );
+    }
+  } catch (e) {
+    // The idempotency key means a retry is safe and returns the same invoice.
+    return Response.json({ ok: false, error: `Couldn't create the invoice. Please try again. (${(e as Error).message})` }, { status: 503 });
   }
 }

@@ -10,6 +10,7 @@ import { formatKobo } from "@/lib/invoice/format";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 30; // allow a serverless DB cold start (Neon idle wake)
 
 export default async function InvoicesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q } = await searchParams;
