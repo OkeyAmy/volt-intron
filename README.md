@@ -286,4 +286,5 @@ have not measured ourselves. Where Sahara loses to another model, we will report
 | [`docs/research.md`](docs/research.md) | Verified API findings, each marked observed or documented |
 | [`docs/recording-protocol.md`](docs/recording-protocol.md) | How the evaluation set is collected, and consent |
 | [`docs/repo-hygiene.md`](docs/repo-hygiene.md) | Contributor-list cleanup |
+| [`docs/sautice-stt-research-paper.md`](docs/sautice-stt-research-paper.md) | 3-page product-centric research report on the STT benchmark |
 | [`design/design-plan.md`](design/design-plan.md) | Visual identity and its rationale |

@@ -116,7 +116,7 @@ uv run python -m benchmarks.run \
    `uv run python -m benchmarks.run --add-codeswitch benchmarks/data/sautibench/recordings`
 5. Run all providers as usual; Track 3 appears in `report.md`.
 
-### Language hints (verified against each API on 2026-09-15)
+### Language hints (verified against each API)
 
 | Language | Sahara | Groq Whisper | Gemini | ElevenLabs |
 |---|---|---|---|---|
@@ -168,6 +168,10 @@ Results land in `benchmarks/outputs/<tag>/`:
 - `results.json` — full summary (per-provider WER/CER, breakdowns, money outcomes)
 - `cost.json` — cost ledger (see below)
 - `per_cell.jsonl` — per-utterance rows incl. transcripts (local only, git-ignored)
+
+Research write-up: **[`docs/sautice-stt-research-paper.md`](../docs/sautice-stt-research-paper.md)**
+— 3-page, Sautice product-centric analysis (Track 1 rankings, tone gaps,
+Track 2 money probe, OpenWER cross-validation, vendor recommendation).
 
 Partial runs merge: re-running a single provider under the same tag updates only
 that provider's cells; other providers' results are preserved.
