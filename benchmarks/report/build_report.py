@@ -107,7 +107,7 @@ def build_html(tag: str) -> str:
 
     parts = [f"<h1>Sautice — code-switched speech benchmark</h1>"
              f"<p class='meta'>Run <code>{html.escape(tag)}</code> · commit <code>{commit}</code> · "
-             f"built {date.today().isoformat()} · {len(providers)} models</p>"]
+             f"built {date.today().isoformat()} · {len(providers)} model{'s' if len(providers) != 1 else ''}</p>"]
     if narrative.get("summary"):
         parts.append("<h2>1. Summary</h2>" + md(narrative["summary"]))
 
