@@ -28,13 +28,33 @@ Verify the manifest: `uv run python -m benchmarks.load_data --info` (or read
 
 ## Track 2 assets
 
-- **Recorded briefs** (primary): real human recordings of the SautiBench money
-  scripts in `benchmarks/data/created/` (voice = PII, git-ignored), mapped to
-  scenarios by `benchmarks/data/created/mapping.json` (committed).
+- **Recorded briefs** (primary): the repository owner's own voice, reading the
+  SautiBench money scripts. The **source files are committed** — `benchmarks/data/
+  created/test1.m4a … test9.m4a` — for full transparency and auditability.
+  The derived 16k mono wavs (`data/audio/16k/recorded_*.wav`) are _not_
+  committed; they regenerate from the sources via `--add-recordings`.
 - **Synthetic TTS briefs** (deprecated auxiliary): Intron-TTS clips under
   `benchmarks/data/sautibench/tts/` (git-ignored; regenerable).
 
-Ingest your own recordings:
+### Recorded briefs manifest
+
+| source | scenario | heard in transcript (Sahara) | duration | scoring status |
+|---|---|---|---|---|
+| `test1.m4a` | s01 | 5 …Dangote Cement…12,500…Adebayo Stores | 5.9s | mapped — scored |
+| `test2.m4a` | s02 | 3…BUA…12,100 + 2…Emulsion…8,000…Chinedu | 8.2s | mapped — scored |
+| `test3.m4a` | s03 | 10 lengths iron rod…8,500…Musa Hardware | 4.6s | mapped — scored |
+| `test4.m4a` | — | *(ASR returned empty; re-record needed)* | 5.3s | held out — no mapping |
+| `test5.m4a` | s05 | 1 trip Sharp Sand…85,000…Funmilayo Trading | 6.2s | mapped — scored |
+| `test6.m4a` | s13 | 12…PVC pipe…4,200…Rahman Tijani | 7.0s | mapped — scored |
+| `test7.m4a` | s28 | 3 trips granite…120,000 + 2 trips sharp sand…85,000…Chinedu | 7.7s | mapped — scored |
+| `test8.m4a` | — | 4 …Dangote Cement…12,500 *(no customer heard)* | 4.3s | held out — no mapping |
+| `test9.m4a` | s15 | 5 units waterproff additive…6,500…Musa & Brothers | 6.9s | mapped — scored |
+
+Mappings live in `benchmarks/data/created/mapping.json`; edit it, add
+`"confirmed": true`, and re-run `--add-recordings` to ingest a held-out file
+once you know its scenario.
+
+Ingest the recordings:
 
 ```
 uv run python -m benchmarks.run \
@@ -48,7 +68,7 @@ uv run python -m benchmarks.run \
 |---|---|---|---|
 | intron_sahara | `INTRON_API_KEY` | Sahara streaming STT | 0.44 credits per audio-second; motel retry+backoff against server throttle |
 | groq_whisper | `GROQ_API_KEY` | `whisper-large-v3-turbo` | OpenAI-compatible endpoint |
-| gemini | `GEMINI_API_KEY`, `GEMINI_API_KEY_2` (…also `GENAI_API_KEY`, `GOOGLE_API_KEY`) | `gemini-3-flash-preview` | Keys rotate automatically on 429/quota with backoff |
+| gemini | `GEMINI_API_KEY`, `GEMINI_API_KEY_2` (…also `GENAI_API_KEY`, `GOOGLE_API_KEY`) | `gemini-3.8-flash` | Keys rotate automatically on 429/quota with backoff |
 | elevenlabs | `ELEVENLABS_API_KEY` | `scribe_v1` | Rest single-audio upload |
 
 Providers with missing env keys are auto-skipped.
@@ -96,7 +116,8 @@ calls are never cached and will re-bill on retry.
 | `data/hub_cache/` (2.8 GB parquet) | ignored | regenerable via `load_data`; pull is resumable |
 | `data/**/audio/` (16k wavs) | ignored | regenerable, large |
 | `data/sautibench/tts/` | ignored | AI-generated, credits to recreate |
-| `data/created/*.m4a` + `recorded_*.wav` | ignored | voice = PII |
+| `data/created/test*.m4a` | **committed** | source recordings, published for transparency (owner's own voice) |
+| `data/created/*.wav`, `data/audio/16k/recorded_*.wav` | ignored | derived 16k mono, regenerated via `--add-recordings` |
 | `outputs/cache/`, `outputs/*/per_cell.jsonl` | ignored | credit cache + transcripts must stay local |
 
 To rebuild everything from a clean clone: set the four provider keys,
