@@ -18,7 +18,15 @@ let ready: Promise<void> | null = null;
 function client(): Sql {
   if (sqlSingleton) return sqlSingleton;
   const local = /@(localhost|127\.0\.0\.1)[:/]/.test(PG_URL);
-  sqlSingleton = postgres(PG_URL, { max: 1, prepare: false, idle_timeout: 20, ssl: local ? undefined : "require" });
+  // connect_timeout is generous because serverless Postgres (e.g. Neon free tier)
+  // suspends when idle and takes a few seconds to wake on the first request.
+  sqlSingleton = postgres(PG_URL, {
+    max: 1,
+    prepare: false,
+    idle_timeout: 20,
+    connect_timeout: 20,
+    ssl: local ? undefined : "require",
+  });
   return sqlSingleton;
 }
 

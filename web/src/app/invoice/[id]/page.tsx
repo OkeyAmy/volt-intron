@@ -11,6 +11,7 @@ import PrintButton from "./PrintButton";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 30; // allow a serverless DB cold start (Neon idle wake)
 
 interface Business { name: string; address?: string; phone?: string; email?: string }
 

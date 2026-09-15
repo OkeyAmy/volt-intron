@@ -3,6 +3,7 @@ import { getInvoice } from "@/lib/invoice/store";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 30; // allow a serverless DB cold start (Neon idle wake)
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

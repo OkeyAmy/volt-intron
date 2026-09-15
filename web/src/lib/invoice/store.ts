@@ -16,11 +16,12 @@ let storePromise: Promise<Store> | null = null;
 
 function getStore(): Promise<Store> {
   if (!storePromise) {
-    if (!PG_URL && (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)) {
-      // Serverless has no writable disk for SQLite. Fail with a clear message instead
-      // of a cryptic filesystem error, so whoever configures the deploy sees the fix.
+    if (!PG_URL && process.env.NODE_ENV === "production") {
+      // Any production host (Vercel, Render, Railway, Fly, …) should use Postgres;
+      // SQLite needs a writable disk that serverless lacks and containers lose on
+      // restart. Fail with a clear message instead of a cryptic backend error.
       storePromise = Promise.reject(
-        new Error("No database configured. Add a Postgres database and set DATABASE_URL / POSTGRES_URL (see docs/deploy-vercel.md)."),
+        new Error("No database configured. Set DATABASE_URL / POSTGRES_URL to a Postgres database (e.g. Neon). See docs/deploy-vercel.md."),
       );
     } else {
       storePromise = PG_URL

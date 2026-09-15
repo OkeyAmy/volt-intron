@@ -17,6 +17,15 @@ interface Selections {
   lines: Array<{ product_id?: string; product_new_name?: string; qty?: number; unit_price_naira?: string }>;
 }
 
+/** Parse a response as JSON without throwing on an empty/non-JSON body (e.g. a
+ *  gateway timeout page), so the user sees a clear message, not a parser error. */
+async function readJson(res: Response): Promise<Record<string, unknown>> {
+  const text = await res.text();
+  if (!text) return { ok: false, error: `The server didn't respond (status ${res.status}). Please try again.` };
+  try { return JSON.parse(text) as Record<string, unknown>; }
+  catch { return { ok: false, error: `Unexpected response from the server (status ${res.status}). Please try again.` }; }
+}
+
 export default function DraftReview({ transcript, onIssued, onCancel }: {
   transcript: string;
   onIssued: (id: string, number: string) => void;
@@ -37,12 +46,12 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ transcript, selections, draftId: id }),
     });
-    return res.json();
+    return readJson(res);
   }, [transcript]);
 
-  const applyDraft = useCallback((data: { ok: boolean; error?: string; draft?: Draft; draftId?: string; version?: number }) => {
-    if (!data.ok || !data.draft) { setError(data.error ?? "Could not build the draft."); return; }
-    setDraft(data.draft); setDraftId(data.draftId ?? null); setVersion(data.version ?? 0);
+  const applyDraft = useCallback((data: Record<string, unknown>) => {
+    if (!data.ok || !data.draft) { setError((data.error as string) ?? "Could not build the draft."); return; }
+    setDraft(data.draft as Draft); setDraftId((data.draftId as string) ?? null); setVersion((data.version as number) ?? 0);
   }, []);
 
   const post = useCallback(async (selections: Selections, id: string | null) => {
@@ -100,9 +109,10 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ draftId, version, idempotencyKey: idemRef.current }),
       });
-      const data = await res.json();
-      if (!data.ok) { setError(data.error ?? "Could not issue the invoice."); setBusy(false); return; }
-      onIssued(data.invoice.id, data.invoice.number);
+      const data = await readJson(res);
+      if (!data.ok) { setError((data.error as string) ?? "Could not issue the invoice."); setBusy(false); return; }
+      const inv = data.invoice as { id: string; number: string };
+      onIssued(inv.id, inv.number);
     } catch (e) {
       setError(`Could not reach the server: ${(e as Error).message}`);
       setBusy(false);
