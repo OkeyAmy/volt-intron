@@ -1,0 +1,17 @@
+# Render blueprint for the full voice app. In the Render dashboard:
+#   New + → Blueprint → connect this repo. Render reads this file, builds the
+#   Dockerfile, and asks for the two secret env vars below.
+# Render web services support WebSockets on all plans, so the Sahara voice gateway
+# works. (Free plan sleeps after ~15 min idle; first request then cold-starts.)
+services:
+  - type: web
+    name: sautice-voice
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: INTRON_API_KEY      # Sahara STT key (voice.intron.io)
+        sync: false
+      - key: DATABASE_URL        # Postgres, e.g. your Neon pooled connection string
+        sync: false

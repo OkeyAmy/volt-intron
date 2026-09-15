@@ -2,10 +2,11 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.17.0",
   "scripts": {
     "dev": "tsx --env-file=../.env server.mts",
     "build": "next build",
-    "start": "NODE_ENV=production tsx --env-file=../.env server.mts",
+    "start": "tsx server.mts",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
