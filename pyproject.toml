@@ -20,8 +20,16 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "huggingface-hub>=1.31.0",
+    "jiwer>=4.0.0",
+    "openai>=3.14.0",
+    "pandas>=3.0.5",
+    "pyarrow>=25.0.1",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
+    "python-dotenv>=1.2.3",
+    "requests>=2.34.2",
+    "whisper-normalizer>=0.1.15",
 ]
 
 [tool.pytest.ini_options]

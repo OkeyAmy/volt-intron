@@ -1,0 +1,91 @@
+{
+  "tag": "smoke",
+  "cells": 12,
+  "providers": [
+    "intron_sahara"
+  ],
+  "summary": {
+    "intron_sahara": {
+      "n": 12,
+      "norm_wer": {
+        "mean": 0.3604,
+        "n": 10,
+        "ci95": 0.2215,
+        "sd": 0.3096
+      },
+      "norm_cer": {
+        "mean": 0.217,
+        "n": 10,
+        "ci95": 0.1576,
+        "sd": 0.2203
+      },
+      "basic_wer": {
+        "mean": 0.3604,
+        "n": 10,
+        "ci95": 0.2215,
+        "sd": 0.3096
+      },
+      "ok_rate": 0.8333,
+      "latency_s": {
+        "mean": 15.7668,
+        "n": 12,
+        "ci95": 6.2498,
+        "sd": 9.8365
+      },
+      "accent_breakdown": {
+        "pidgin": {
+          "mean": 0.4604,
+          "n": 10,
+          "ci95": 0.2413,
+          "sd": 0.3373
+        },
+        "nigerian-cv": {
+          "mean": 0.5,
+          "n": 2,
+          "ci95": 4.4922,
+          "sd": 0.5
+        }
+      },
+      "source_breakdown": {
+        "nigerian-pidgin": {
+          "mean": 0.4604,
+          "n": 10,
+          "ci95": 0.2413,
+          "sd": 0.3373
+        },
+        "alamin-cv": {
+          "mean": 0.5,
+          "n": 2,
+          "ci95": 4.4922,
+          "sd": 0.5
+        }
+      },
+      "language_breakdown": {
+        "pidgin": {
+          "mean": 0.4604,
+          "n": 10,
+          "ci95": 0.2413,
+          "sd": 0.3373
+        },
+        "english": {
+          "mean": 0.5,
+          "n": 2,
+          "ci95": 4.4922,
+          "sd": 0.5
+        }
+      },
+      "money": {
+        "n": 0
+      },
+      "money_scenario": {
+        "n": 0
+      },
+      "money_synthetic": {
+        "n": 0
+      },
+      "synthetic_n": 0,
+      "credit_est": 16.0
+    }
+  },
+  "committed_rows": 60
+}
