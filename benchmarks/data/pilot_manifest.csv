@@ -1,69 +1,61 @@
-id,audio_path,duration,text_ref,language,accent,root,source,scenario_id
-alamin_english_1614,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_english_1614.wav,3.072,Turn left onto the slip road,english,nigerian-cv,alamin-cv,alamin-cv,
-alamin_english_2408,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_english_2408.wav,3.072,Not the same thing a bit!,english,nigerian-cv,alamin-cv,alamin-cv,
-alamin_english_4517,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_english_4517.wav,3.072,I like cooking my jollof rice in the oven.,english,nigerian-cv,alamin-cv,alamin-cv,
-alamin_english_7851,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_english_7851.wav,3.072,That was the absolute worst.,english,nigerian-cv,alamin-cv,alamin-cv,
-alamin_english_8104,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_english_8104.wav,3.072,"Yes, it is snowing in Copenhagen.",english,nigerian-cv,alamin-cv,alamin-cv,
-alamin_hausa_1968,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_hausa_1968.wav,3.067,Bitrus na da wani shiri.,hausa,nigerian-cv,alamin-cv,alamin-cv,
-alamin_hausa_2144,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_hausa_2144.wav,3.067,Meyasa kika damu da Aliyu?,hausa,nigerian-cv,alamin-cv,alamin-cv,
-alamin_hausa_2486,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_hausa_2486.wav,3.067,Ina tsammanin na gano.,hausa,nigerian-cv,alamin-cv,alamin-cv,
-alamin_hausa_4943,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_hausa_4943.wav,3.067,An turo ni na raka ki.,hausa,nigerian-cv,alamin-cv,alamin-cv,
-alamin_hausa_7955,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_hausa_7955.wav,3.067,Sun bi wannan hanyar.,hausa,nigerian-cv,alamin-cv,alamin-cv,
-alamin_igbo_1812,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_igbo_1812.wav,3.067,Ọ ka nọ ndụ ugbua,igbo,nigerian-cv,alamin-cv,alamin-cv,
-alamin_igbo_2013,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_igbo_2013.wav,3.048,ézì,igbo,nigerian-cv,alamin-cv,alamin-cv,
-alamin_igbo_3028,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_igbo_3028.wav,3.012,maazị Abang,igbo,nigerian-cv,alamin-cv,alamin-cv,
-alamin_igbo_4657,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_igbo_4657.wav,3.012,n'ịtụ akwụkwọ.,igbo,nigerian-cv,alamin-cv,alamin-cv,
-alamin_igbo_7499,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_igbo_7499.wav,3.067,otu onye so na ya bụ òtù,igbo,nigerian-cv,alamin-cv,alamin-cv,
-alamin_yoruba_1763,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_yoruba_1763.wav,3.067,Tọ́pẹ́ lu ẹran ìyá àgbà pa.,yoruba,nigerian-cv,alamin-cv,alamin-cv,
-alamin_yoruba_3181,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_yoruba_3181.wav,3.067,Ajá fẹ́ràn à ti máa jẹ eegun lọ́pọ̀lọpọ̀.,yoruba,nigerian-cv,alamin-cv,alamin-cv,
-alamin_yoruba_4622,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_yoruba_4622.wav,3.067,Ìlú Ìbàdàn ni wọ́n tí ṣe àgbẹ́kalẹ̀ ẹgbẹ́ ọmọ Yorúbá tuntun.,yoruba,nigerian-cv,alamin-cv,alamin-cv,
-alamin_yoruba_5744,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_yoruba_5744.wav,3.067,Àwọn jàndùkú agbébọn jí èrò ọkọ̀ mẹ́fà.,yoruba,nigerian-cv,alamin-cv,alamin-cv,
-alamin_yoruba_7867,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/alamin_yoruba_7867.wav,3.103,Bàbá Àdìsá àti Ìyá Àdìsá ti fi ayé sílẹ̀.,yoruba,nigerian-cv,alamin-cv,alamin-cv,
-naija_EN_1976,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_1976.wav,3.33,And that's when I tried to do this art.,english,EN,naija-s2st,naija-s2st,
-naija_EN_2028,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_2028.wav,3.29,Dieye turned professional seven years ago.,english,EN,naija-s2st,naija-s2st,
-naija_EN_2596,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_2596.wav,3.25,"Golf is a complete sport, she said.",english,EN,naija-s2st,naija-s2st,
-naija_EN_2688,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_2688.wav,3.13,I also work for maybe 50 minutes.,english,EN,naija-s2st,naija-s2st,
-naija_EN_2929,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_2929.wav,3.05,There are things that won’t be forgotten.,english,EN,naija-s2st,naija-s2st,
-naija_EN_3363,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_3363.wav,3.01,"You walk, you think, and you concentrate.",english,EN,naija-s2st,naija-s2st,
-naija_EN_3961,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_3961.wav,3.09,But scientists are aiming to change that.,english,EN,naija-s2st,naija-s2st,
-naija_EN_4078,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_4078.wav,3.17,But that talent makes them unique.,english,EN,naija-s2st,naija-s2st,
-naija_EN_4374,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_4374.wav,3.33,Lehane said he has high hopes.,english,EN,naija-s2st,naija-s2st,
-naija_EN_6054,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_6054.wav,3.05,That is something Labor opposes.,english,EN,naija-s2st,naija-s2st,
-naija_EN_7101,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_7101.wav,3.17,"“For the world, it means the hope of peace.",english,EN,naija-s2st,naija-s2st,
-naija_EN_9133,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_9133.wav,3.33,"I train in the morning, noon and night.",english,EN,naija-s2st,naija-s2st,
-naija_EN_9711,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_9711.wav,3.33,"But then, in her first match, she won.",english,EN,naija-s2st,naija-s2st,
-naija_EN_9858,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_9858.wav,3.01,Lets not write off the young people.,english,EN,naija-s2st,naija-s2st,
-naija_EN_9974,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EN_9974.wav,3.29,It was the third year in a row of losses.,english,EN,naija-s2st,naija-s2st,
-naija_EY_2341,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_2341.wav,3.49,They can contribute photos taken during that time.,english,EY,naija-s2st,naija-s2st,
-naija_EY_3945,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_3945.wav,3.39,More than 95% of Senegalese are Muslim.,english,EY,naija-s2st,naija-s2st,
-naija_EY_4999,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_4999.wav,3.45,Every day of my lunch hour is sacrificed for voluntary work.,english,EY,naija-s2st,naija-s2st,
-naija_EY_5070,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_5070.wav,3.39,But the rules are unfamiliar to many Nigerians.,english,EY,naija-s2st,naija-s2st,
-naija_EY_5911,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_5911.wav,3.29,"You walk, you think, and you concentrate.",english,EY,naija-s2st,naija-s2st,
-naija_EY_5919,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_5919.wav,3.55,There are some other artists that Im very excited about.,english,EY,naija-s2st,naija-s2st,
-naija_EY_6146,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_6146.wav,3.13,"And, they really pushed me, like, You should be doing something bigger.",english,EY,naija-s2st,naija-s2st,
-naija_EY_6627,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_6627.wav,4.03,Nigerian Khalifa Ibrahim plays for the Kano Titans.,english,EY,naija-s2st,naija-s2st,
-naija_EY_6924,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_6924.wav,3.29,The 5th Chukkers went on to win the tournament.,english,EY,naija-s2st,naija-s2st,
-naija_EY_8005,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_8005.wav,3.03,"I train in the morning, noon and night.",english,EY,naija-s2st,naija-s2st,
-naija_EY_8353,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_8353.wav,4.09,The riders move at speeds of up to 65 kilometers per hour.,english,EY,naija-s2st,naija-s2st,
-naija_EY_8424,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_8424.wav,3.23,"But to me, I feel safer on a horse than in a car.",english,EY,naija-s2st,naija-s2st,
-naija_EY_8628,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_8628.wav,3.17,Malick showed the vibrant youth.,english,EY,naija-s2st,naija-s2st,
-naija_EY_9111,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_9111.wav,3.91,"When asked how many competitions she has won, she can’t answer.",english,EY,naija-s2st,naija-s2st,
-naija_EY_9604,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/naija_EY_9604.wav,3.85,"I’m in the gym three or four times per week, she said.",english,EY,naija-s2st,naija-s2st,
-pidgin_1791,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/pidgin_1791.wav,3.017,na for sunday punch dis matter tok so,pidgin,pidgin,nigerian-pidgin,nigerian-pidgin,
-pidgin_1950,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/pidgin_1950.wav,3.04,also show say dem get good relationship with dia teacher and no be di teacher koboko dem get relationship with,pidgin,pidgin,nigerian-pidgin,nigerian-pidgin,
-pidgin_2186,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/pidgin_2186.wav,3.04,you fit choose to package am as fruit salads and deliver,pidgin,pidgin,nigerian-pidgin,nigerian-pidgin,
-pidgin_2542,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/pidgin_2542.wav,3.04,for di visit wey hapun for dis morning di govnor say him happy,pidgin,pidgin,nigerian-pidgin,nigerian-pidgin,
-pidgin_3471,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/pidgin_3471.wav,3.017,na him dash many politician years of sentence,pidgin,pidgin,nigerian-pidgin,nigerian-pidgin,
-pidgin_6305,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/pidgin_6305.wav,3.017,heavyweights like senate president,pidgin,pidgin,nigerian-pidgin,nigerian-pidgin,
-pidgin_6991,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/pidgin_6991.wav,3.04,i happy as di fan welcom am,pidgin,pidgin,nigerian-pidgin,nigerian-pidgin,
-pidgin_7468,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/pidgin_7468.wav,3.017,billings way oregun lagos nigeria,pidgin,pidgin,nigerian-pidgin,nigerian-pidgin,
-pidgin_9313,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/pidgin_9313.wav,3.04,fela go really dey shake im head inside grave,pidgin,pidgin,nigerian-pidgin,nigerian-pidgin,
-pidgin_9779,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/pidgin_9779.wav,3.04,pray for buhari and no take time carry am go court scientists,pidgin,pidgin,nigerian-pidgin,nigerian-pidgin,
-rec_s01,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/recorded_s01.wav,5.909,"5 bags of Dangote Cement at 12,500 naira for Adebayo Stores",english,recorded,sautibench,recorded,s01
-rec_s02,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/recorded_s02.wav,8.192,"3 bags of BUA Cement at 12,100 naira, and 2 buckets of Emulsion Paint at 8,000 naira for Chinedu Enterprises",english,recorded,sautibench,recorded,s02
-rec_s03,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/recorded_s03.wav,4.629,"10 lengths of Iron Rod at 8,500 naira for Musa Hardware",english,recorded,sautibench,recorded,s03
-rec_s05,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/recorded_s05.wav,6.165,"1 trip of Sharp Sand at 85,000 naira for Funmilayo Trading Co",english,recorded,sautibench,recorded,s05
-rec_s13,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/recorded_s13.wav,6.997,"12 lengths of PVC Pipe at 4,200 naira for Rahman Tijani Stores",english,recorded,sautibench,recorded,s13
-rec_s15,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/recorded_s15.wav,6.891,"5 units of Waterproof Cement Additive at 6,500 naira for Musa & Brothers",english,recorded,sautibench,recorded,s15
-rec_s28,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/audio/16k/recorded_s28.wav,7.68,"3 trips of Granite at 120,000 naira, and 2 trips of Sharp Sand at 85,000 naira for Chinedu Enterprises",english,recorded,sautibench,recorded,s28
-tts_s01,/home/okey/Desktop/Projects/volt-intron/benchmarks/data/sautibench/tts/s01-16k.wav,7.782,"5 bags of Dangote Cement at 12,500 naira for Adebayo Stores",english,synthetic,sautibench,synthetic,s01
+accent,audio_path,duration,id,language,root,scenario_id,source,text_ref
+pidgin,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/pidgin_6305.wav,3.017,pidgin_6305,pidgin,nigerian-pidgin,,nigerian-pidgin,heavyweights like senate president
+pidgin,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/pidgin_3471.wav,3.017,pidgin_3471,pidgin,nigerian-pidgin,,nigerian-pidgin,na him dash many politician years of sentence
+pidgin,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/pidgin_7468.wav,3.017,pidgin_7468,pidgin,nigerian-pidgin,,nigerian-pidgin,na for sunday punch dis matter tok so
+pidgin,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/pidgin_1791.wav,3.017,pidgin_1791,pidgin,nigerian-pidgin,,nigerian-pidgin,billings way oregun lagos nigeria
+pidgin,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/pidgin_2186.wav,3.04,pidgin_2186,pidgin,nigerian-pidgin,,nigerian-pidgin,fela go really dey shake im head inside grave
+pidgin,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/pidgin_9779.wav,3.04,pidgin_9779,pidgin,nigerian-pidgin,,nigerian-pidgin,pray for buhari and no take time carry am go court scientists
+pidgin,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/pidgin_2542.wav,3.04,pidgin_2542,pidgin,nigerian-pidgin,,nigerian-pidgin,for di visit wey hapun for dis morning di govnor say him happy
+pidgin,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/pidgin_6991.wav,3.04,pidgin_6991,pidgin,nigerian-pidgin,,nigerian-pidgin,also show say dem get good relationship with dia teacher and no be di teacher koboko dem get relationship with
+pidgin,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/pidgin_1950.wav,3.04,pidgin_1950,pidgin,nigerian-pidgin,,nigerian-pidgin,i happy as di fan welcom am
+pidgin,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/pidgin_9313.wav,3.04,pidgin_9313,pidgin,nigerian-pidgin,,nigerian-pidgin,you fit choose to package am as fruit salads and deliver
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_english_4517.wav,3.072,alamin_english_4517,english,alamin-cv,,alamin-cv,"Yes, it is snowing in Copenhagen."
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_english_1614.wav,3.072,alamin_english_1614,english,alamin-cv,,alamin-cv,I like cooking my jollof rice in the oven.
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_english_2408.wav,3.072,alamin_english_2408,english,alamin-cv,,alamin-cv,Stir your cauldron as you dance!
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_english_8104.wav,3.072,alamin_english_8104,english,alamin-cv,,alamin-cv,Were you boxing professionally then
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_english_7851.wav,3.072,alamin_english_7851,english,alamin-cv,,alamin-cv,Turn left onto the slip road
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_hausa_2144.wav,3.067,alamin_hausa_2144,hausa,alamin-cv,,alamin-cv,Zan buɗe akwatin na ga abinda ke ciki.
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_hausa_4943.wav,3.067,alamin_hausa_4943,hausa,alamin-cv,,alamin-cv,ka ce kanada wannan ciwon kirji
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_hausa_2486.wav,3.067,alamin_hausa_2486,hausa,alamin-cv,,alamin-cv,Ina tsammanin na gano.
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_hausa_7955.wav,3.067,alamin_hausa_7955,hausa,alamin-cv,,alamin-cv,Mustapha mai yiwuwa ba zai yi dariya ba.
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_hausa_1968.wav,3.067,alamin_hausa_1968,hausa,alamin-cv,,alamin-cv,Bitrus ɗana ne da na raina.
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_igbo_3028.wav,3.012,alamin_igbo_3028,igbo,alamin-cv,,alamin-cv,maazị Abang
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_igbo_4657.wav,3.012,alamin_igbo_4657,igbo,alamin-cv,,alamin-cv,n'ịtụ akwụkwọ.
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_igbo_2013.wav,3.048,alamin_igbo_2013,igbo,alamin-cv,,alamin-cv,ézì
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_igbo_7499.wav,3.067,alamin_igbo_7499,igbo,alamin-cv,,alamin-cv,Ọmasị
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_igbo_1812.wav,3.067,alamin_igbo_1812,igbo,alamin-cv,,alamin-cv,Mana oge ugbua
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_yoruba_4622.wav,3.067,alamin_yoruba_4622,yoruba,alamin-cv,,alamin-cv,Tọ́pẹ́ lu ẹran ìyá àgbà pa.
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_yoruba_1763.wav,3.067,alamin_yoruba_1763,yoruba,alamin-cv,,alamin-cv,Àwọn jàndùkú agbébọn jí èrò ọkọ̀ mẹ́fà.
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_yoruba_3181.wav,3.067,alamin_yoruba_3181,yoruba,alamin-cv,,alamin-cv,Ìlú Ìbàdàn ni wọ́n tí ṣe àgbẹ́kalẹ̀ ẹgbẹ́ ọmọ Yorúbá tuntun.
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_yoruba_5744.wav,3.067,alamin_yoruba_5744,yoruba,alamin-cv,,alamin-cv,Ajá fẹ́ràn à ti máa jẹ eegun lọ́pọ̀lọpọ̀.
+nigerian-cv,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/alamin_yoruba_7867.wav,3.103,alamin_yoruba_7867,yoruba,alamin-cv,,alamin-cv,Mo bẹ Mosún kí ó yámi lówó di ọla.
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_3363.wav,3.01,naija_EN_3363,english,naija-s2st,,naija-s2st,Lets not write off the young people.
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_9858.wav,3.01,naija_EN_9858,english,naija-s2st,,naija-s2st,"You walk, you think, and you concentrate."
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_2929.wav,3.05,naija_EN_2929,english,naija-s2st,,naija-s2st,That is something Labor opposes.
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_6054.wav,3.05,naija_EN_6054,english,naija-s2st,,naija-s2st,There are things that won’t be forgotten.
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_3961.wav,3.09,naija_EN_3961,english,naija-s2st,,naija-s2st,But scientists are aiming to change that.
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_2688.wav,3.13,naija_EN_2688,english,naija-s2st,,naija-s2st,I also work for maybe 50 minutes.
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_4078.wav,3.17,naija_EN_4078,english,naija-s2st,,naija-s2st,"“For the world, it means the hope of peace."
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_7101.wav,3.17,naija_EN_7101,english,naija-s2st,,naija-s2st,But that talent makes them unique.
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_2596.wav,3.25,naija_EN_2596,english,naija-s2st,,naija-s2st,"Golf is a complete sport, she said."
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_9974.wav,3.29,naija_EN_9974,english,naija-s2st,,naija-s2st,It was the third year in a row of losses.
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_2028.wav,3.29,naija_EN_2028,english,naija-s2st,,naija-s2st,Dieye turned professional seven years ago.
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_1976.wav,3.33,naija_EN_1976,english,naija-s2st,,naija-s2st,"But then, in her first match, she won."
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_4374.wav,3.33,naija_EN_4374,english,naija-s2st,,naija-s2st,And that's when I tried to do this art.
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_9133.wav,3.33,naija_EN_9133,english,naija-s2st,,naija-s2st,"I train in the morning, noon and night."
+EN,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EN_9711.wav,3.33,naija_EN_9711,english,naija-s2st,,naija-s2st,Lehane said he has high hopes.
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_8005.wav,3.03,naija_EY_8005,english,naija-s2st,,naija-s2st,"I train in the morning, noon and night."
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_6146.wav,3.13,naija_EY_6146,english,naija-s2st,,naija-s2st,"And, they really pushed me, like, You should be doing something bigger."
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_8628.wav,3.17,naija_EY_8628,english,naija-s2st,,naija-s2st,Malick showed the vibrant youth.
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_8424.wav,3.23,naija_EY_8424,english,naija-s2st,,naija-s2st,"But to me, I feel safer on a horse than in a car."
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_6924.wav,3.29,naija_EY_6924,english,naija-s2st,,naija-s2st,The 5th Chukkers went on to win the tournament.
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_5911.wav,3.29,naija_EY_5911,english,naija-s2st,,naija-s2st,"You walk, you think, and you concentrate."
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_5070.wav,3.39,naija_EY_5070,english,naija-s2st,,naija-s2st,But the rules are unfamiliar to many Nigerians.
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_3945.wav,3.39,naija_EY_3945,english,naija-s2st,,naija-s2st,More than 95% of Senegalese are Muslim.
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_4999.wav,3.45,naija_EY_4999,english,naija-s2st,,naija-s2st,Every day of my lunch hour is sacrificed for voluntary work.
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_2341.wav,3.49,naija_EY_2341,english,naija-s2st,,naija-s2st,They can contribute photos taken during that time.
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_5919.wav,3.55,naija_EY_5919,english,naija-s2st,,naija-s2st,There are some other artists that Im very excited about.
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_9604.wav,3.85,naija_EY_9604,english,naija-s2st,,naija-s2st,"I’m in the gym three or four times per week, she said."
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_9111.wav,3.91,naija_EY_9111,english,naija-s2st,,naija-s2st,"When asked how many competitions she has won, she can’t answer."
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_6627.wav,4.03,naija_EY_6627,english,naija-s2st,,naija-s2st,Nigerian Khalifa Ibrahim plays for the Kano Titans.
+EY,/Users/mac/Downloads/intron/2026-hack/volt-intron/benchmarks/data/audio/16k/naija_EY_8353.wav,4.09,naija_EY_8353,english,naija-s2st,,naija-s2st,The riders move at speeds of up to 65 kilometers per hour.
