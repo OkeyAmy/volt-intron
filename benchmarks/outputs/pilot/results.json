@@ -8,82 +8,137 @@
   ],
   "summary": {
     "groq_whisper": {
-      "n": 60,
+      "n": 55,
       "norm_wer": {
         "mean": 0.3819,
         "n": 55,
         "ci95": 0.1091,
-        "sd": 0.413
+        "sd": 0.413,
+        "median": 0.2,
+        "q25": 0.0,
+        "q75": 0.8167
       },
       "norm_cer": {
         "mean": 0.1881,
         "n": 55,
         "ci95": 0.0564,
-        "sd": 0.2133
+        "sd": 0.2133,
+        "median": 0.1053,
+        "q25": 0.0,
+        "q75": 0.3522
       },
       "basic_wer": {
         "mean": 0.3795,
         "n": 55,
         "ci95": 0.11,
-        "sd": 0.4162
+        "sd": 0.4162,
+        "median": 0.2,
+        "q25": 0.0,
+        "q75": 0.8167
       },
+      "wer_median": 0.2,
       "recorded_wer": {
         "mean": 0.2901,
         "n": 7,
         "ci95": 0.1756,
-        "sd": 0.1898
+        "sd": 0.1898,
+        "median": 0.3333,
+        "q25": 0.1417,
+        "q75": 0.4342
       },
       "ok_rate": 0.9265,
       "latency_s": {
-        "mean": 2.5288,
+        "mean": 2.5293,
         "n": 68,
-        "ci95": 0.2231,
-        "sd": 0.9388
+        "ci95": 0.224,
+        "sd": 0.9425,
+        "median": 2.335,
+        "q25": 1.977,
+        "q75": 2.8792
+      },
+      "latency_median": 2.335,
+      "error_types": {
+        "ins": 10,
+        "del": 36,
+        "sub": 119,
+        "hits": 293,
+        "n_ref": 458
+      },
+      "rtfx": 1.33,
+      "nwer": {
+        "mean": 0.0903,
+        "n": 4,
+        "ci95": 0.1635,
+        "sd": 0.1028,
+        "median": 0.0556,
+        "q25": 0.0,
+        "q75": 0.1458
       },
       "accent_breakdown": {
         "nigerian-cv": {
-          "mean": 0.7516,
-          "n": 20,
-          "ci95": 0.1707,
-          "sd": 0.3648
+          "mean": 0.6688,
+          "n": 15,
+          "ci95": 0.2145,
+          "sd": 0.3873,
+          "median": 0.8571,
+          "q25": 0.2667,
+          "q75": 1.0
         },
         "EN": {
           "mean": 0.1209,
           "n": 15,
           "ci95": 0.1131,
-          "sd": 0.2041
+          "sd": 0.2041,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.1389
         },
         "EY": {
           "mean": 0.0914,
           "n": 15,
           "ci95": 0.0678,
-          "sd": 0.1224
+          "sd": 0.1224,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.1556
         },
         "pidgin": {
           "mean": 0.7787,
           "n": 10,
           "ci95": 0.2462,
-          "sd": 0.3442
+          "sd": 0.3442,
+          "median": 0.8452,
+          "q25": 0.5673,
+          "q75": 0.8854
         }
       },
       "source_breakdown": {
         "alamin-cv": {
-          "mean": 0.7516,
-          "n": 20,
-          "ci95": 0.1707,
-          "sd": 0.3648
+          "mean": 0.6688,
+          "n": 15,
+          "ci95": 0.2145,
+          "sd": 0.3873,
+          "median": 0.8571,
+          "q25": 0.2667,
+          "q75": 1.0
         },
         "naija-s2st": {
           "mean": 0.1062,
           "n": 30,
           "ci95": 0.0631,
-          "sd": 0.169
+          "sd": 0.169,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.1528
         },
         "nigerian-pidgin": {
           "mean": 0.7787,
           "n": 10,
           "ci95": 0.2462,
-          "sd": 0.3442
+          "sd": 0.3442,
+          "median": 0.8452,
+          "q25": 0.5673,
+          "q75": 0.8854
         }
       },
       "language_breakdown": {
@@ -91,31 +146,75 @@
           "mean": 0.111,
           "n": 35,
           "ci95": 0.0544,
-          "sd": 0.1641
+          "sd": 0.1641,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.1833
         },
         "hausa": {
           "mean": 0.92,
           "n": 5,
           "ci95": 0.1216,
-          "sd": 0.098
-        },
-        "igbo": {
-          "mean": 1.0,
-          "n": 5,
-          "ci95": null,
-          "sd": 0.0
+          "sd": 0.098,
+          "median": 1.0,
+          "q25": 0.8,
+          "q75": 1.0
         },
         "yoruba": {
           "mean": 0.9464,
           "n": 5,
           "ci95": 0.0818,
-          "sd": 0.0659
+          "sd": 0.0659,
+          "median": 1.0,
+          "q25": 0.875,
+          "q75": 1.0
         },
         "pidgin": {
           "mean": 0.7787,
           "n": 10,
           "ci95": 0.2462,
-          "sd": 0.3442
+          "sd": 0.3442,
+          "median": 0.8452,
+          "q25": 0.5673,
+          "q75": 0.8854
+        }
+      },
+      "language_cer_breakdown": {
+        "english": {
+          "mean": 0.0545,
+          "n": 35,
+          "ci95": 0.0268,
+          "sd": 0.0808,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0911
+        },
+        "hausa": {
+          "mean": 0.374,
+          "n": 5,
+          "ci95": 0.1332,
+          "sd": 0.1073,
+          "median": 0.3333,
+          "q25": 0.2857,
+          "q75": 0.44
+        },
+        "yoruba": {
+          "mean": 0.4533,
+          "n": 5,
+          "ci95": 0.1297,
+          "sd": 0.1045,
+          "median": 0.4615,
+          "q25": 0.4167,
+          "q75": 0.5273
+        },
+        "pidgin": {
+          "mean": 0.4301,
+          "n": 10,
+          "ci95": 0.1477,
+          "sd": 0.2065,
+          "median": 0.4488,
+          "q25": 0.2427,
+          "q75": 0.5783
         }
       },
       "money": {
@@ -156,7 +255,7 @@
       },
       "synthetic_n": 1,
       "recorded_n": 7,
-      "credit_est": 84.3
+      "credit_est": 77.7
     },
     "elevenlabs": {
       "n": 60,
@@ -164,57 +263,103 @@
         "mean": 0.1695,
         "n": 60,
         "ci95": 0.0727,
-        "sd": 0.2873
+        "sd": 0.2873,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.25
       },
       "norm_cer": {
         "mean": 0.0666,
         "n": 60,
         "ci95": 0.0341,
-        "sd": 0.1347
+        "sd": 0.1347,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.0705
       },
       "basic_wer": {
         "mean": 0.1706,
         "n": 60,
         "ci95": 0.0732,
-        "sd": 0.2891
+        "sd": 0.2891,
+        "median": 0.0,
+        "q25": 0.0,
+        "q75": 0.2557
       },
+      "wer_median": 0.0,
       "recorded_wer": {
         "mean": 0.1452,
         "n": 7,
         "ci95": 0.0742,
-        "sd": 0.0803
+        "sd": 0.0803,
+        "median": 0.1,
+        "q25": 0.0871,
+        "q75": 0.2083
       },
       "ok_rate": 1.0,
       "latency_s": {
         "mean": 3.2334,
         "n": 68,
         "ci95": 0.257,
-        "sd": 1.0813
+        "sd": 1.0813,
+        "median": 3.0605,
+        "q25": 2.5187,
+        "q75": 3.647
+      },
+      "latency_median": 3.0605,
+      "error_types": {
+        "ins": 9,
+        "del": 16,
+        "sub": 57,
+        "hits": 393,
+        "n_ref": 475
+      },
+      "rtfx": 1.07,
+      "nwer": {
+        "mean": 0.1052,
+        "n": 4,
+        "ci95": 0.1016,
+        "sd": 0.0638,
+        "median": 0.127,
+        "q25": 0.0833,
+        "q75": 0.1488
       },
       "accent_breakdown": {
         "nigerian-cv": {
           "mean": 0.1607,
           "n": 20,
           "ci95": 0.1016,
-          "sd": 0.217
+          "sd": 0.217,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.3438
         },
         "EN": {
           "mean": 0.0563,
           "n": 15,
           "ci95": 0.0544,
-          "sd": 0.0982
+          "sd": 0.0982,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0714
         },
         "EY": {
           "mean": 0.0775,
           "n": 15,
           "ci95": 0.0444,
-          "sd": 0.0801
+          "sd": 0.0801,
+          "median": 0.0769,
+          "q25": 0.0,
+          "q75": 0.1548
         },
         "pidgin": {
           "mean": 0.4948,
           "n": 10,
           "ci95": 0.3498,
-          "sd": 0.489
+          "sd": 0.489,
+          "median": 0.3485,
+          "q25": 0.25,
+          "q75": 0.4533
         }
       },
       "source_breakdown": {
@@ -222,19 +367,28 @@
           "mean": 0.1607,
           "n": 20,
           "ci95": 0.1016,
-          "sd": 0.217
+          "sd": 0.217,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.3438
         },
         "naija-s2st": {
           "mean": 0.0669,
           "n": 30,
           "ci95": 0.0337,
-          "sd": 0.0903
+          "sd": 0.0903,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.1429
         },
         "nigerian-pidgin": {
           "mean": 0.4948,
           "n": 10,
           "ci95": 0.3498,
-          "sd": 0.489
+          "sd": 0.489,
+          "median": 0.3485,
+          "q25": 0.25,
+          "q75": 0.4533
         }
       },
       "language_breakdown": {
@@ -242,31 +396,93 @@
           "mean": 0.0621,
           "n": 35,
           "ci95": 0.0292,
-          "sd": 0.0881
+          "sd": 0.0881,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.1429
         },
         "hausa": {
           "mean": 0.2467,
           "n": 5,
           "ci95": 0.2586,
-          "sd": 0.2083
+          "sd": 0.2083,
+          "median": 0.3333,
+          "q25": 0.0,
+          "q75": 0.4
         },
         "igbo": {
           "mean": 0.2333,
           "n": 5,
           "ci95": 0.3608,
-          "sd": 0.2906
+          "sd": 0.2906,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.5
         },
         "yoruba": {
           "mean": 0.1295,
           "n": 5,
           "ci95": 0.201,
-          "sd": 0.1619
+          "sd": 0.1619,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.2727
         },
         "pidgin": {
           "mean": 0.4948,
           "n": 10,
           "ci95": 0.3498,
-          "sd": 0.489
+          "sd": 0.489,
+          "median": 0.3485,
+          "q25": 0.25,
+          "q75": 0.4533
+        }
+      },
+      "language_cer_breakdown": {
+        "english": {
+          "mean": 0.0204,
+          "n": 35,
+          "ci95": 0.0102,
+          "sd": 0.0308,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0351
+        },
+        "hausa": {
+          "mean": 0.0747,
+          "n": 5,
+          "ci95": 0.0968,
+          "sd": 0.078,
+          "median": 0.04,
+          "q25": 0.0,
+          "q75": 0.1429
+        },
+        "igbo": {
+          "mean": 0.049,
+          "n": 5,
+          "ci95": 0.0784,
+          "sd": 0.0632,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0909
+        },
+        "yoruba": {
+          "mean": 0.0257,
+          "n": 5,
+          "ci95": 0.0396,
+          "sd": 0.0319,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0556
+        },
+        "pidgin": {
+          "mean": 0.2535,
+          "n": 10,
+          "ci95": 0.1702,
+          "sd": 0.238,
+          "median": 0.1958,
+          "q25": 0.0937,
+          "q75": 0.2867
         }
       },
       "money": {
@@ -315,57 +531,103 @@
         "mean": 0.1642,
         "n": 60,
         "ci95": 0.0552,
-        "sd": 0.2182
+        "sd": 0.2182,
+        "median": 0.1056,
+        "q25": 0.0,
+        "q75": 0.276
       },
       "norm_cer": {
         "mean": 0.0719,
         "n": 60,
         "ci95": 0.0318,
-        "sd": 0.1256
+        "sd": 0.1256,
+        "median": 0.0193,
+        "q25": 0.0,
+        "q75": 0.106
       },
       "basic_wer": {
         "mean": 0.1733,
         "n": 60,
         "ci95": 0.0554,
-        "sd": 0.2188
+        "sd": 0.2188,
+        "median": 0.1111,
+        "q25": 0.0,
+        "q75": 0.3019
       },
+      "wer_median": 0.1056,
       "recorded_wer": {
         "mean": 0.6063,
         "n": 7,
         "ci95": 0.3204,
-        "sd": 0.3464
+        "sd": 0.3464,
+        "median": 0.5833,
+        "q25": 0.3523,
+        "q75": 0.8947
       },
       "ok_rate": 1.0,
       "latency_s": {
         "mean": 19.4505,
         "n": 68,
         "ci95": 4.6038,
-        "sd": 19.3694
+        "sd": 19.3694,
+        "median": 11.7595,
+        "q25": 9.092,
+        "q75": 17.908
+      },
+      "latency_median": 11.7595,
+      "error_types": {
+        "ins": 6,
+        "del": 25,
+        "sub": 52,
+        "hits": 389,
+        "n_ref": 472
+      },
+      "rtfx": 0.17,
+      "nwer": {
+        "mean": 0.1468,
+        "n": 4,
+        "ci95": 0.191,
+        "sd": 0.12,
+        "median": 0.127,
+        "q25": 0.0833,
+        "q75": 0.1905
       },
       "accent_breakdown": {
         "nigerian-cv": {
           "mean": 0.1848,
           "n": 20,
           "ci95": 0.0985,
-          "sd": 0.2106
+          "sd": 0.2106,
+          "median": 0.0556,
+          "q25": 0.0,
+          "q75": 0.35
         },
         "EN": {
           "mean": 0.0906,
           "n": 15,
           "ci95": 0.0711,
-          "sd": 0.1284
+          "sd": 0.1284,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.1548
         },
         "EY": {
           "mean": 0.0605,
           "n": 15,
           "ci95": 0.0536,
-          "sd": 0.0967
+          "sd": 0.0967,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.127
         },
         "pidgin": {
           "mean": 0.389,
           "n": 10,
           "ci95": 0.2056,
-          "sd": 0.2874
+          "sd": 0.2874,
+          "median": 0.2792,
+          "q25": 0.1654,
+          "q75": 0.4792
         }
       },
       "source_breakdown": {
@@ -373,19 +635,28 @@
           "mean": 0.1848,
           "n": 20,
           "ci95": 0.0985,
-          "sd": 0.2106
+          "sd": 0.2106,
+          "median": 0.0556,
+          "q25": 0.0,
+          "q75": 0.35
         },
         "naija-s2st": {
           "mean": 0.0756,
           "n": 30,
           "ci95": 0.0428,
-          "sd": 0.1147
+          "sd": 0.1147,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.1429
         },
         "nigerian-pidgin": {
           "mean": 0.389,
           "n": 10,
           "ci95": 0.2056,
-          "sd": 0.2874
+          "sd": 0.2874,
+          "median": 0.2792,
+          "q25": 0.1654,
+          "q75": 0.4792
         }
       },
       "language_breakdown": {
@@ -393,31 +664,93 @@
           "mean": 0.0743,
           "n": 35,
           "ci95": 0.039,
-          "sd": 0.1176
+          "sd": 0.1176,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.1429
         },
         "hausa": {
           "mean": 0.1467,
           "n": 5,
           "ci95": 0.2245,
-          "sd": 0.1809
+          "sd": 0.1809,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.3333
         },
         "igbo": {
           "mean": 0.3133,
           "n": 5,
           "ci95": 0.3348,
-          "sd": 0.2696
+          "sd": 0.2696,
+          "median": 0.4,
+          "q25": 0.0,
+          "q75": 0.5
         },
         "yoruba": {
           "mean": 0.2125,
           "n": 5,
           "ci95": 0.1817,
-          "sd": 0.1464
+          "sd": 0.1464,
+          "median": 0.25,
+          "q25": 0.1111,
+          "q75": 0.2727
         },
         "pidgin": {
           "mean": 0.389,
           "n": 10,
           "ci95": 0.2056,
-          "sd": 0.2874
+          "sd": 0.2874,
+          "median": 0.2792,
+          "q25": 0.1654,
+          "q75": 0.4792
+        }
+      },
+      "language_cer_breakdown": {
+        "english": {
+          "mean": 0.0341,
+          "n": 35,
+          "ci95": 0.0217,
+          "sd": 0.0656,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.0388
+        },
+        "hausa": {
+          "mean": 0.0366,
+          "n": 5,
+          "ci95": 0.0687,
+          "sd": 0.0554,
+          "median": 0.0,
+          "q25": 0.0,
+          "q75": 0.04
+        },
+        "igbo": {
+          "mean": 0.0607,
+          "n": 5,
+          "ci95": 0.0723,
+          "sd": 0.0582,
+          "median": 0.0588,
+          "q25": 0.0,
+          "q75": 0.0909
+        },
+        "yoruba": {
+          "mean": 0.0628,
+          "n": 5,
+          "ci95": 0.0532,
+          "sd": 0.0429,
+          "median": 0.0727,
+          "q25": 0.0278,
+          "q75": 0.1026
+        },
+        "pidgin": {
+          "mean": 0.2319,
+          "n": 10,
+          "ci95": 0.1501,
+          "sd": 0.2099,
+          "median": 0.1723,
+          "q25": 0.0911,
+          "q75": 0.2518
         }
       },
       "money": {
@@ -468,10 +801,44 @@
       "groq_whisper": 245.89,
       "intron_sahara": 245.89
     },
-    "fresh_cells_this_run": 0,
-    "cache_hits_this_run": 68,
+    "fresh_cells_this_run": 5,
+    "cache_hits_this_run": 199,
     "est_fresh_intron_credits_this_run": 0.0,
-    "balance_snapshot": 1353.77
+    "balance_snapshot": 1530.0
   },
-  "committed_rows": 68
+  "committed_rows": 68,
+  "methodology": {
+    "generated_at": "2026-09-15T23:04:27",
+    "git_commit": "84f5f841e9425f5b1e47822949a6eebbf309b714",
+    "python": "3.12.13",
+    "platform": "Linux-6.19.10-300.fc44.x86_64-x86_64-with-glibc2.43",
+    "deps": {
+      "jiwer": "4.0.0",
+      "whisper_normalizer": "locked-scheme (see eval/metrics.py)"
+    },
+    "audio_pipeline": "16k mono PCM via ffmpeg (see load_data / --add-recordings)",
+    "scoring": {
+      "wer": "WER = (S + D + I) / N via jiwer on symmetrically normalized ref+hyp",
+      "cer": "jiwer.cer on same normalized pairs",
+      "norm_scheme": "whisper-normalizer: EnglishTextNormalizer (en) / BasicTextNormalizer(remove_diacritics) (other); frozen in benchmarks/eval/metrics.py before scoring",
+      "ci": "95% t-based CI over per-sample scores (normal approx n>30)",
+      "error_types": "ins/del/sub/hits from jiwer.process_words on the norm pair; stored per cell with a consistency assert"
+    },
+    "corpora": {
+      "asr-nigerian-pidgin/nigerian-pidgin-1.0": "10 pidgin clips (train split)",
+      "AlaminI/nigerian_common_voice_dataset": "20 clips en/ha/ig/yo (train split)",
+      "McGill-NLP/NaijaS2ST": "30 clips ENx15 + EYx15 (dev split dev-00000)"
+    },
+    "transparency": {
+      "per_cell_hypotheses": "outputs/<tag>/transcripts/<provider>.tsv (committed)",
+      "per_cell_raw": "outputs/<tag>/per_cell.jsonl (local only, git-ignored)",
+      "cost_ledger": "outputs/<tag>/cost.json (committed)"
+    }
+  },
+  "provider_snapshots": {
+    "intron_sahara": "api-default (see provider module)",
+    "groq_whisper": "whisper-large-v3-turbo",
+    "gemini": "gemini-3.8-flash",
+    "elevenlabs": "scribe_v1"
+  }
 }
