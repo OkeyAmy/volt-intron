@@ -274,3 +274,6 @@ body {
   .sr-card { padding: var(--s5) var(--s4); }
   .app-brand span { font-size: var(--t-md); }
 }
+
+/* ---- Voice degraded (streaming down, buffering for the file API) ---- */
+.sr-degraded { background: var(--query-bg); color: var(--query); border-radius: var(--r-md); padding: var(--s2) var(--s3); font-size: var(--t-sm); line-height: var(--lh-body); margin: 0; }
