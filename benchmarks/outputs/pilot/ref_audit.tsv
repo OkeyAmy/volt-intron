@@ -6,7 +6,7 @@ alamin_english_7851	alamin-cv	english	3	3	0.2	0.0		That was the absolute worst.
 alamin_english_8104	alamin-cv	english	3	3	0.167	0.0		Yes, it is snowing in Copenhagen.
 alamin_hausa_1968	alamin-cv	hausa	3	3	0.8	0.0	low_cross_provider_agreement,outlier:groq_whisper	Bitrus na da wani shiri.
 alamin_hausa_2144	alamin-cv	hausa	3	3	0.833	0.4	low_cross_provider_agreement,outlier:groq_whisper	Meyasa kika damu da Aliyu?
-alamin_hausa_2486	alamin-cv	hausa	3	3	1.0	0.5	low_cross_provider_agreement,outlier:groq_whisper	Ina tsammanin na gano.
+alamin_hausa_2486	alamin-cv	hausa	3	3	1.0	0.25	low_cross_provider_agreement,outlier:groq_whisper	Ina tsammanin na gano.
 alamin_hausa_4943	alamin-cv	hausa	3	3	0.833	0.333	low_cross_provider_agreement,outlier:groq_whisper	An turo ni na raka ki.
 alamin_hausa_7955	alamin-cv	hausa	3	3	1.0	0.0	low_cross_provider_agreement,outlier:groq_whisper	Sun bi wannan hanyar.
 alamin_igbo_1812	alamin-cv	igbo	3	2	0.4	0.2	outlier:groq_whisper	Ọ ka nọ ndụ ugbua
@@ -16,7 +16,7 @@ alamin_igbo_4657	alamin-cv	igbo	3	2	0.667	0.667	low_cross_provider_agreement,out
 alamin_igbo_7499	alamin-cv	igbo	3	2	0.0	0.0	outlier:groq_whisper	otu onye so na ya bụ òtù
 alamin_yoruba_1763	alamin-cv	yoruba	3	3	1.0	0.0	low_cross_provider_agreement,outlier:groq_whisper	Tọ́pẹ́ lu ẹran ìyá àgbà pa.
 alamin_yoruba_3181	alamin-cv	yoruba	3	3	0.857	0.375	low_cross_provider_agreement,outlier:groq_whisper	Ajá fẹ́ràn à ti máa jẹ eegun lọ́pọ̀lọpọ̀.
-alamin_yoruba_4622	alamin-cv	yoruba	3	3	1.0	0.273	low_cross_provider_agreement,outlier:groq_whisper	Ìlú Ìbàdàn ni wọ́n tí ṣe àgbẹ́kalẹ̀ ẹgbẹ́ ọmọ Yorúbá tuntun.
+alamin_yoruba_4622	alamin-cv	yoruba	3	3	1.0	0.909	low_cross_provider_agreement	Ìlú Ìbàdàn ni wọ́n tí ṣe àgbẹ́kalẹ̀ ẹgbẹ́ ọmọ Yorúbá tuntun.
 alamin_yoruba_5744	alamin-cv	yoruba	3	3	0.857	0.429	low_cross_provider_agreement,outlier:groq_whisper	Àwọn jàndùkú agbébọn jí èrò ọkọ̀ mẹ́fà.
 alamin_yoruba_7867	alamin-cv	yoruba	3	3	1.0	0.111	low_cross_provider_agreement,outlier:groq_whisper	Bàbá Àdìsá àti Ìyá Àdìsá ti fi ayé sílẹ̀.
 naija_EN_1976	naija-s2st	english	3	3	0.2	0.1		And that's when I tried to do this art.
@@ -56,8 +56,8 @@ pidgin_2542	nigerian-pidgin	pidgin	3	3	0.5	0.462	outlier:groq_whisper	for di vis
 pidgin_3471	nigerian-pidgin	pidgin	3	3	0.75	0.5	low_cross_provider_agreement,outlier:intron_sahara	na him dash many politician years of sentence
 pidgin_6305	nigerian-pidgin	pidgin	3	3	0.857	1.5	low_cross_provider_agreement	heavyweights like senate president
 pidgin_6991	nigerian-pidgin	pidgin	3	3	0.556	0.429	low_cross_provider_agreement,outlier:groq_whisper	i happy as di fan welcom am
-pidgin_7468	nigerian-pidgin	pidgin	3	3	0.2	0.2		billings way oregun lagos nigeria
-pidgin_9313	nigerian-pidgin	pidgin	3	3	0.7	0.111	low_cross_provider_agreement,outlier:groq_whisper	fela go really dey shake im head inside grave
+pidgin_7468	nigerian-pidgin	pidgin	3	3	0.4	0.2		billings way oregun lagos nigeria
+pidgin_9313	nigerian-pidgin	pidgin	3	3	0.7	0.444	low_cross_provider_agreement,outlier:groq_whisper	fela go really dey shake im head inside grave
 pidgin_9779	nigerian-pidgin	pidgin	3	3	0.818	0.417	low_cross_provider_agreement,outlier:groq_whisper	pray for buhari and no take time carry am go court scientists
 rec_s01	recorded	english	3	3	0.455	0.455		5 bags of Dangote Cement at 12,500 naira for Adebayo Stores
 rec_s02	recorded	english	3	3	0.211	0.2		3 bags of BUA Cement at 12,100 naira, and 2 buckets of Emulsion Paint at 8,000 naira for Chinedu Enterprises

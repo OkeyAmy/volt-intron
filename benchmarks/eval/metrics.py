@@ -3,11 +3,22 @@
 Ported and trimmed from Intron-Multimodal-Benchmarking/scripts/evaluations.py.
 
 Policy: normalization is locked here, before any provider score is produced.
-Two schemes per pair:
-  - "basic": light cleanup (case, punctuation noise, filler words).
-  - "norm":  whisper-normalizer (EnglishTextNormalizer for english,
-             BasicTextNormalizer(remove_diacritics) for the rest).
-Reported headline is always "norm"; "basic" is secondary context.
+Three schemes per pair (all pure functions of ref/hyp/language):
+  - "basic":     light cleanup (case, punctuation noise, filler words).
+  - "norm":      whisper-normalizer (EnglishTextNormalizer for english,
+                 BasicTextNormalizer(remove_diacritics) for the rest).
+                 Frozen default: reported headline.
+  - "norm_diac": same as norm but PRESERVES diacritics (tones) for non-English.
+                 Reference: 2026 African-ASR literature (FER/TER, OpenWER) warns
+                 that stripping tone diacritics hides phonological errors, so the
+                 gap norm - norm_diac is reported as tone/diacritic-driven error.
+                 For english both schemes are identical by construction.
+
+The extra scheme is computed per cell but does not change the frozen headline.
+Every published aggregate stays re-derivable from the published raw hypotheses.
+
+Method version bumps when the scoring scheme changes; recorded in results.json
+so every published number is pinned to the exact metric definition.
 """
 from __future__ import annotations
 
@@ -16,6 +27,8 @@ import re
 import string
 
 import jiwer
+
+METRICS_VERSION = "2.0"
 
 _INAUDIBLE_TAGS = [
     "[music] [inaudible]", "(inaudible) ", "[inaudible)", "(inaudible]",
@@ -83,7 +96,8 @@ def clean_basic(text: str) -> str:
     return re.sub(r"[^a-zA-Z0-9\s\.\,\-\?\:\'\/\(\)\[\]\+\%]", "", text)
 
 
-def clean_multilingual(text: str, remove_diacritics: bool = True) -> str:
+def clean_multilingual(text: str, remove_diacritics: bool = True,
+                     preserve_marks: bool = False) -> str:
     nn, _en, BasicTextNormalizer = _normalizers()
     text = nn(text)
     text = (
@@ -108,11 +122,16 @@ def clean_multilingual(text: str, remove_diacritics: bool = True) -> str:
         .strip()
     )
     text = " ".join(text.split())
-    return BasicTextNormalizer(remove_diacritics=remove_diacritics)(text)
+    return BasicTextNormalizer(remove_diacritics=remove_diacritics,
+                               preserve_marks=preserve_marks)(text)
 
 
 def normalize_pair(ref: str, hyp: str, language: str, scheme: str = "norm"):
-    """Return (norm_ref, norm_hyp) under the locked scheme."""
+    """Return (norm_ref, norm_hyp) under the locked scheme.
+
+    scheme is one of "norm" | "norm_diac" | "basic". "norm_diac" differs from
+    "norm" only by keeping diacritics (tone marks) for non-English text; english
+    takes the identical path in both, so the two schemes converge for en."""
     is_en = (language or "").lower() in ("english", "en")
     r = strip_inaudible(ref)
     h = strip_inaudible(hyp)
@@ -126,7 +145,14 @@ def normalize_pair(ref: str, hyp: str, language: str, scheme: str = "norm"):
         en = EnglishTextNormalizer()
         cr, ch = nn(r), nn(h)
         return en(cr) or _GUARD, en(ch) or _GUARD
-    cr, ch = clean_multilingual(r), clean_multilingual(h)
+    if scheme == "norm_diac":
+        # keep tone diacritics by preserving Unicode Mark chars, so tonal
+        # differences are scored instead of being erased (FER/TER, OpenWER).
+        cr = clean_multilingual(r, remove_diacritics=False, preserve_marks=True)
+        ch = clean_multilingual(h, remove_diacritics=False, preserve_marks=True)
+    else:
+        cr = clean_multilingual(r, remove_diacritics=True)
+        ch = clean_multilingual(h, remove_diacritics=True)
     return cr or _GUARD, ch or _GUARD
 
 
@@ -135,32 +161,58 @@ def _guard_empty(s: str) -> str:
 
 
 def cell_metrics(ref: str, hyp: str, language: str) -> dict:
-    """Per-cell WER/CER under both schemes; guards empty pairs.
+    """Per-cell WER/CER under all locked schemes; guards empty pairs.
 
     Also returns the norm-scheme error-type counts (insertions/deletions/
     substitutions from jiwer.process_words) and a consistency flag proving the
     stored WER equals (S+D+I)/N, so every published number is independently
-    re-derivable from the raw hypothesis.
+    re-derivable from the raw hypothesis. The same consistency hold is emitted
+    for the diacritics-preserving norm_diac scheme.
     """
     out = {}
-    for scheme in ("norm", "basic"):
+    for scheme in ("norm", "norm_diac", "basic"):
         nr, nh = normalize_pair(ref, hyp, language, scheme)
         out[f"{scheme}_wer"] = jiwer.wer(_guard_empty(nr), _guard_empty(nh))
         out[f"{scheme}_cer"] = jiwer.cer(_guard_empty(nr), _guard_empty(nh))
-    nr, nh = normalize_pair(ref, hyp, language, "norm")
-    w = jiwer.process_words(_guard_empty(nr), _guard_empty(nh))
-    n_ref = w.substitutions + w.deletions + w.insertions + w.hits
-    out["norm_ins"] = w.insertions
-    out["norm_del"] = w.deletions
-    out["norm_sub"] = w.substitutions
-    out["norm_hits"] = w.hits
+
+    def _counts(scheme: str) -> tuple[int, int, int, int, int]:
+        nr, nh = normalize_pair(ref, hyp, language, scheme)
+        w = jiwer.process_words(_guard_empty(nr), _guard_empty(nh))
+        # jiwer's WER denominator is the REFERENCE length = S + D + H (insertions
+        # add only to the numerator: WER=(S+D+I)/N_ref).
+        return (
+            w.substitutions + w.deletions + w.hits,
+            w.substitutions, w.deletions, w.insertions, w.hits,
+        )
+
+    n_ref, subs, dels, ins, hits = _counts("norm")
+    out["norm_ins"] = ins
+    out["norm_del"] = dels
+    out["norm_sub"] = subs
+    out["norm_hits"] = hits
     out["norm_n_ref"] = n_ref
     out["norm_wer_consistent"] = (
         n_ref > 0
-        and abs((w.insertions + w.deletions + w.substitutions) / n_ref
-                - out["norm_wer"]) < 1e-9
+        and abs((ins + dels + subs) / n_ref - out["norm_wer"]) < 1e-9
+    )
+    d_ref, d_sub, d_del, d_ins, _ = _counts("norm_diac")
+    out["norm_diac_wer_consistent"] = (
+        d_ref > 0
+        and abs((d_ins + d_del + d_sub) / d_ref - out["norm_diac_wer"]) < 1e-9
     )
     return out
+
+
+def macro_average(grouped: dict[str, dict]) -> dict:
+    """Unweighted macro-average across groups (e.g. per-language means).
+
+    Reporters of African multilingual ASR (WAXAL 2026, SimbaBench) headline a
+    macro average so each language counts once regardless of clip counts; the
+    utterance-pooled mean is reported separately as the sample mean."""
+    means = [v["mean"] for v in grouped.values() if v.get("mean") is not None]
+    if not means:
+        return {"mean": None, "n_groups": 0}
+    return {"mean": round(sum(means) / len(means), 4), "n_groups": len(means)}
 
 
 # --- aggregation helpers ---------------------------------------------------

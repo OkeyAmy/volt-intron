@@ -42,16 +42,26 @@ https://www.nist.gov/itl/iad/mltg/openasr-challenge · Open ASR Leaderboard
 Gladia benchmarking guide https://docs.gladia.io/chapters/pre-recorded-stt/benchmarking ·
 AssemblyAI how-to-evaluate https://www.assemblyai.com/blog/how-to-evaluate-speech-recognition-models
 
-Metric references (2026 multilingual practice — why we report CER and NWER
-alongside WER):
+Metric references (2026 multilingual practice — why we report CER, NWER,
+diacritics-preserving WER and macro averages alongside WER):
 - OpenWER — cross-lingual scoring; language-specific normalization cuts
   multilingual WER up to ~25 pt vs whisper-normalizer+jiwer, so our WER for
   hausa/igbo/yoruba is an **upper bound** https://arxiv.org/abs/2606.21237
 - FER/TER — WER misreads tonal/phonetic loss as lexical error for African
   languages (Yoruba BERT e.g. WER 78.8% vs CER 30.5%); complement with CER
   https://aclanthology.org/2026.africanlp-main.14/
+- "What is lost in normalization?" — whisper-normalizer strips tone diacritics,
+  which silently erases phonological error; we therefore also report a
+  diacritics-preserving WER (`norm_diac_wer`, `preserve_marks=True`) and the
+  gap `norm − diac-p` https://github.com/robot074/whisper-normalization
 - AfriVox-v2 — production metrics EWER/NWER (entity/numeric WER) as the
-  deployment-critical numbers https://arxiv.org/abs/2605.03590
+  deployment-critical numbers http://arxiv.org/abs/2605.03590
+- WAXAL-NET — macro-averaged cross-language WER over 19 African languages
+  https://arxiv.org/abs/2606.02375
+- SimbaBench — 46 sub-Saharan languages scored on WER **and** CER
+  https://arxiv.org/abs/2609.06918
+- AfriSwitch — code-switching benchmark, macro-averaged metrics per language
+  https://arxiv.org/abs/2607.20688
 
 Splits/licenses are as declared on each Hugging Face dataset card; the
 `dev` vs `train` split selection is frozen in `pilot_manifest_info.json`.
@@ -129,6 +139,16 @@ hint-for-hint identical; the report says so.
 
 Providers with missing env keys are auto-skipped.
 
+> **Gemini: currently BLOCKED at the network level (not a code issue).** On the
+> development network, `generativelanguage.googleapis.com` / `aiplatform
+> .googleapis.com` fail (TCP reset / timeout), while Cloud Storage, AI Studio,
+> groq and elevenlabs are reachable; pinning an alternate Google IP only reaches
+> the storage LB. Provider code is correct and was excluded from the latest cold
+> rerun by design (`--providers intron_sahara elevenlabs groq_whisper`). Two keys
+> exist but have a non-standard `AQ.A…` prefix (len 53 vs `AIzaSy…` len 39) and
+> were not exercised — re-verify them from a permissive network (plain
+> `curl` to `generativelanguage.googleapis.com`) before trusting them.
+
 ## Usage
 
 ```
@@ -136,8 +156,10 @@ Providers with missing env keys are auto-skipped.
 uv run python -m benchmarks.load_data
 
 # 2. score: cached cells are never re-billed; re-runs are free
-uv run python -m benchmarks.run --tag pilot --balance 1353.77
-uv run python -m benchmarks.run --providers groq_whisper gemini elevenlabs --tag pilot
+uv run python -m benchmarks.run --tag pilot --balance 1530.00
+uv run python -m benchmarks.run --providers groq_whisper elevenlabs --tag pilot
+# 2b. (rare) force a cold re-run that ignores the local credit cache:
+uv run python -m benchmarks.run --providers intron_sahara elevenlabs groq_whisper --tag pilot --fresh
 ```
 
 Results land in `benchmarks/outputs/<tag>/`:
@@ -189,4 +211,9 @@ cannot be rebuilt are the user recordings (kept locally) and provider credits.
 
 Normalization + the Sautice money parser are locked before any provider score
 is produced; changing them after results exist invalidates the comparison.
+Current method version **`METRICS_VERSION = "2.0"`** (diacritics-preserving
+WER + macro averages added; WER denominator = reference length `S+D+H`, so
+insertions add to the numerator only). Version is recorded in `results.json`.
 See `benchmarks/eval/metrics.py` and `benchmarks/eval/money_outcome.py`.
+Every cell asserts `WER == (S+D+I)/N` for both `norm` and `norm_diac`, and the
+`transcripts/*.tsv` artifacts let you re-derive any aggregate independently.

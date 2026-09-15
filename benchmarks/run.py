@@ -102,7 +102,7 @@ def run(args) -> tuple[list[dict], dict]:
         ah = audio_hash(row["audio_path"])
         is_syn = is_synthetic(row)
         for name, prov in providers.items():
-            cached = load_cached(name, ah)
+            cached = None if args.fresh else load_cached(name, ah)
             if cached and cached.get("audio") == row["audio_path"]:
                 repl = cached
                 cache_hits += 1
@@ -168,7 +168,9 @@ def write_outputs(tag: str, cells: list[dict], rows: list[dict],
             merged[(c["provider"], c["audio_hash"])] = c
     for c in cells:
         merged[(c["provider"], c["audio_hash"])] = c
-    all_cells = list(merged.values())
+    all_cells = []
+    for c in merged.values():
+        all_cells.append(_backfill_cell_metrics(c))
 
     with open(per_tag, "w") as f:
         for c in all_cells:
@@ -222,9 +224,13 @@ def summarize(cells: list[dict]) -> dict:
         codeswitch = [c for c in human if c.get("source") == "codeswitch"]
         syn = [c for c in cs if is_synthetic(c)]
         cok = [c for c in corpus if c["ok"]]
+        lbreak = _grouped([c for c in corpus], "language")
+        lcer = _grouped([c for c in corpus], "language", "norm_cer")
+        ldiac = _grouped([c for c in corpus], "language", "norm_diac_wer")
         s = {
             "n": len(cok),
             "norm_wer": met.summarize([c["norm_wer"] for c in cok]),
+            "norm_diac_wer": met.summarize([c["norm_diac_wer"] for c in cok]),
             "norm_cer": met.summarize([c["norm_cer"] for c in cok]),
             "basic_wer": met.summarize([c["basic_wer"] for c in cok]),
             "wer_median": met.summarize([c["norm_wer"] for c in cok]).get("median"),
@@ -243,8 +249,12 @@ def summarize(cells: list[dict]) -> dict:
             "nwer": _numeric_wer(cok),
             "accent_breakdown": _grouped([c for c in corpus], "accent"),
             "source_breakdown": _grouped([c for c in corpus], "source"),
-            "language_breakdown": _grouped([c for c in corpus], "language"),
-            "language_cer_breakdown": _grouped([c for c in corpus], "language", "norm_cer"),
+            "language_breakdown": lbreak,
+            "language_cer_breakdown": lcer,
+            "language_diac_wer_breakdown": ldiac,
+            "macro_wer": met.macro_average(lbreak),
+            "macro_cer": met.macro_average(lcer),
+            "macro_diac_wer": met.macro_average(ldiac),
             "money": mo.summarize_outcomes([c["money"] for c in cs if c.get("money")]),
             "money_scenario": mo.summarize_outcomes(
                 [c["money"] for c in cs if c.get("money") and not is_synthetic(c)]),
@@ -288,9 +298,23 @@ def _numeric_wer(cells: list[dict]) -> dict | None:
 
 TRANS_COLUMNS = [
     "provider", "id", "source", "root", "language", "accent",
-    "audio_path", "ok", "latency_s", "audio_sec", "norm_wer", "norm_cer",
-    "basic_wer", "ins", "del", "sub", "n_ref", "scenario_id", "text_ref", "text_hyp",
+    "audio_path", "ok", "latency_s", "audio_sec", "norm_wer", "norm_diac_wer",
+    "norm_cer", "basic_wer", "ins", "del", "sub", "n_ref", "scenario_id",
+    "text_ref", "text_hyp",
 ]
+
+
+def _backfill_cell_metrics(cell: dict) -> dict:
+    """Recompute scoring fields for cells produced under an older schema.
+
+    Merging per-tag output preserves cells from previous runs whose dicts may
+    predate a new metric (e.g. norm_diac_wer). Recompute from the raw stored
+    reference + hypothesis so every row carries the full current schema."""
+    if "norm_diac_wer" not in cell:
+        cell.update(met.cell_metrics(cell.get("text_ref", ""),
+                                     cell.get("text", ""),
+                                     cell.get("language", "")))
+    return cell
 
 
 def write_transcripts(trans_dir: Path, cells: list[dict]) -> None:
@@ -311,12 +335,14 @@ def write_transcripts(trans_dir: Path, cells: list[dict]) -> None:
                                extrasaction="ignore")
             w.writeheader()
             for c in sorted(cs, key=lambda x: x["id"]):
+                _backfill_cell_metrics(c)
                 w.writerow({
                     "provider": prov, "id": c["id"], "source": c.get("source"),
                     "root": c.get("root"), "language": c.get("language"),
                     "accent": c.get("accent"), "audio_path": c["audio_path"],
                     "ok": c.get("ok"), "latency_s": c.get("latency_s"),
                     "audio_sec": c.get("audio_sec"), "norm_wer": c.get("norm_wer"),
+                    "norm_diac_wer": c.get("norm_diac_wer"),
                     "norm_cer": c.get("norm_cer"), "basic_wer": c.get("basic_wer"),
                     "ins": c.get("norm_ins"), "del": c.get("norm_del"),
                     "sub": c.get("norm_sub"), "n_ref": c.get("norm_n_ref"),
@@ -351,6 +377,7 @@ def methodology() -> dict:
     return {
         "generated_at": __import__("datetime").datetime.now().isoformat(timespec="seconds"),
         "git_commit": commit,
+        "metrics_version": met.METRICS_VERSION,
         "python": sys.version.split()[0],
         "platform": platform.platform(),
         "deps": {
@@ -360,8 +387,11 @@ def methodology() -> dict:
         "audio_pipeline": "16k mono PCM via ffmpeg (see load_data / --add-recordings)",
         "scoring": {
             "wer": "WER = (S + D + I) / N via jiwer on symmetrically normalized "
-                   "ref+hyp",
+                   "ref+hyp (N = reference length = S+D+H)",
             "cer": "jiwer.cer on same normalized pairs",
+            "diac_preserving_wer": "norm_diac_wer: same pipeline with "
+                                   "preserve_marks=True; tone gap = norm − diac-p",
+            "macro": "unweighted mean of per-language means (WAXAL/SimbaBench)",
             "norm_scheme": "whisper-normalizer: EnglishTextNormalizer (en) / "
                            "BasicTextNormalizer(remove_diacritics) (other); frozen "
                            "in benchmarks/eval/metrics.py before scoring",
@@ -465,10 +495,18 @@ def render_report(tag: str, summary: dict) -> str:
                  "**symmetrically normalized** reference + hypothesis (whisper-normalizer: "
                  "`EnglishTextNormalizer` for english, `BasicTextNormalizer(remove_diacritics)` "
                  "for the rest). Scheme is frozen in `benchmarks/eval/metrics.py`.")
+    lines.append("- **Diacritics-preserving companion (`WER diac-p`):** same normalization but "
+                 "keeps tone diacritics (`preserve_marks=True`), so tonal error is scored "
+                 "instead of erased. `tone gap = norm − diac-p` (<0 means the frozen scheme "
+                 "flattered the provider by dropping tone marks). 2026 African-ASR practice "
+                 "(FER/TER, OpenWER); identical to `norm` for english by construction.")
+    lines.append("- **Macro averages:** unweighted mean over per-language means (WAXAL/SimbaBench "
+                 "convention) so each language counts once; the sample mean is pooled over clips.")
     lines.append("- **Auditability:** every raw hypothesis is published in "
                  f"`outputs/{tag}/transcripts/<provider>.tsv` (reference, raw hypothesis, "
-                 "normalized WER/CER, ins/del/sub counts, latency). Any aggregate below "
-                 "re-derives from those rows; each cell asserts WER == (S+D+I)/N at scoring time.")
+                 "normalized WER/CER incl. diac-p, ins/del/sub counts, latency). Any aggregate "
+                 "below re-derives from those rows; each cell asserts WER == (S+D+I)/N at "
+                 "scoring time for both norm and diac-p.")
     lines.append("- **Provenance:** corpora pinned by Hugging Face repo + split (see "
                  "`benchmarks/README.md` → References). Audio pipeline: 16k mono PCM via ffmpeg.")
     lines.append("- **Reproducibility:** env pinned via `uv.lock`; `results.json` records "
@@ -476,23 +514,29 @@ def render_report(tag: str, summary: dict) -> str:
     lines.append("")
     lines.append("## Track 1 — ASR quality (standard)")
     lines.append("| provider | n (corpus) | norm WER (95% CI) | median (IQR) | norm CER | "
-                 "NWER (numbers) | basic WER | RTFx (audio/s) | latency | cost est. (cr) |")
-    lines.append("|---|---|---|---|---|---|---|---|---|---|")
+                 "WER diac-p | tone gap | NWER (numbers) | macro WER | macro CER | RTFx | latency | "
+                 "cost est. (cr) |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     for prov, s in sorted(summary.items()):
         w = s["norm_wer"]
         wstr = f"{w['mean']*100:.1f}% (±{w['ci95']*100:.1f})" if (w["mean"] is not None and w["ci95"] is not None) else "-"
         med = f"{s['wer_median']*100:.1f}% ({s['norm_wer']['q25']*100:.1f}–{s['norm_wer']['q75']*100:.1f})" if s["wer_median"] is not None else "-"
         c = s["norm_cer"]
         cstr = f"{c['mean']*100:.1f}%" if c["mean"] is not None else "-"
+        d = s["norm_diac_wer"]
+        dstr = f"{d['mean']*100:.1f}%" if d["mean"] is not None else "-"
+        tgap = (w["mean"] - d["mean"]) * 100 if (w["mean"] is not None and d["mean"] is not None) else None
+        tgstr = f"{tgap:+.1f}" if tgap is not None else "-"
         nw = s.get("nwer")
         nwstr = f"{nw['mean']*100:.1f}% (n={nw['n']})" if nw and nw["mean"] is not None else "-"
-        b = s["basic_wer"]
-        bstr = f"{b['mean']*100:.1f}%" if b["mean"] is not None else "-"
+        mw, mc = s["macro_wer"], s["macro_cer"]
+        mwstr = f"{mw['mean']*100:.1f}%" if mw["mean"] is not None else "-"
+        mcstr = f"{mc['mean']*100:.1f}%" if mc["mean"] is not None else "-"
         r = f"{s['rtfx']:.1f}x" if s["rtfx"] is not None else "-"
         l = s["latency_s"]
         lstr = f"{l['mean']:.1f}s" if l["mean"] is not None else "-"
-        lines.append(f"| {prov} | {s['n']} | {wstr} | {med} | {cstr} | {nwstr} | {bstr} | {r} | "
-                     f"{lstr} | {s['credit_est']} |")
+        lines.append(f"| {prov} | {s['n']} | {wstr} | {med} | {cstr} | {dstr} | {tgstr} | "
+                     f"{nwstr} | {mwstr} | {mcstr} | {r} | {lstr} | {s['credit_est']} |")
     lines.append("")
     lines.append("### Track 1 — error types (norm scoring, corpus; % of reference words)")
     lines.append("| provider | subs | dels | ins | (word match) | n words |")
@@ -513,17 +557,30 @@ def render_report(tag: str, summary: dict) -> str:
             lines.append(f"- {label}: {row}")
         lines.append("")
 
-    lines.append("### Track 1 — per-language WER vs CER (where big gap = tonal/phonetic "
-                 "loss misread as lexical error; see Ref. OpenWER / ACL FER)")
-    lines.append("| provider | language | WER | CER | gap (WER−CER) |")
-    lines.append("|---|---|---|---|---|")
+    lines.append("### Track 1 — per-language WER vs CER vs tone loss (macro at bottom)")
+    lines.append("| provider | language | n | WER | WER diac-p | CER | gap (WER−CER) | tone gap (norm−diac) |")
+    lines.append("|---|---|---|---|---|---|---|---|")
     for prov, s in sorted(summary.items()):
-        for lang in sorted(set(s["language_breakdown"]) | set(s["language_cer_breakdown"])):
-            w, c = s["language_breakdown"].get(lang), s["language_cer_breakdown"].get(lang)
+        langset = set(s["language_breakdown"]) | set(s["language_cer_breakdown"]) | \
+            set(s["language_diac_wer_breakdown"])
+        for lang in sorted(langset):
+            w = s["language_breakdown"].get(lang)
+            c = s["language_cer_breakdown"].get(lang)
+            dd = s["language_diac_wer_breakdown"].get(lang)
             if not w or not c or w["mean"] is None or c["mean"] is None:
                 continue
             gap = (w["mean"] - c["mean"]) * 100
-            lines.append(f"| {prov} | {lang} | {w['mean']*100:.1f}% | {c['mean']*100:.1f}% | {gap:+.1f} |")
+            dstr = f"{dd['mean']*100:.1f}%" if (dd and dd["mean"] is not None) else "-"
+            tgap = (w["mean"] - dd["mean"]) * 100 if (dd and dd["mean"] is not None) else None
+            tgstr = f"{tgap:+.1f}" if tgap is not None else "-"
+            lines.append(f"| {prov} | {lang} | {w['n']} | {w['mean']*100:.1f}% | {dstr} | "
+                         f"{c['mean']*100:.1f}% | {gap:+.1f} | {tgstr} |")
+        mw, mc, md = s["macro_wer"], s["macro_cer"], s["macro_diac_wer"]
+        mwstr = f"{mw['mean']*100:.1f}%" if mw["mean"] is not None else "-"
+        mcstr = f"{mc['mean']*100:.1f}%" if mc["mean"] is not None else "-"
+        mdstr = f"{md['mean']*100:.1f}%" if md["mean"] is not None else "-"
+        lines.append(f"| {prov} | **macro (unwtd over {mw.get('n_groups','-')} langs)** | — | "
+                     f"{mwstr} | {mdstr} | {mcstr} | — | — |")
     lines.append("")
     lines.append("Notes on Track 1 metrics: **CER** is the linguistically-valid signal for "
                  "tone/accent African languages (2026 ACL work shows WER misreads phonetic "
@@ -691,6 +748,8 @@ def main() -> int:
     ap.add_argument("--providers", nargs="*", default=None,
                     help="default: all configured (intron_sahara groq_whisper gemini elevenlabs)")
     ap.add_argument("--tag", default="pilot")
+    ap.add_argument("--fresh", action="store_true",
+                    help="ignore local cache (still write results) — forces a cold API run")
     ap.add_argument("--max-cells", type=int, default=None)
     ap.add_argument("--timeout", type=int, default=300)
     ap.add_argument("--balance", type=float, default=1530.0, help="Intron credit balance")
