@@ -190,8 +190,10 @@ def summarize(cells: list[dict]) -> dict:
     summary = {}
     for prov, cs in by_prov.items():
         human = [c for c in cs if not is_synthetic(c)]
-        corpus = [c for c in human if c.get("source") != "recorded"]
+        # Track 1 stays the open corpora only; our recordings are scored apart.
+        corpus = [c for c in human if c.get("source") not in ("recorded", "codeswitch")]
         recorded = [c for c in human if c.get("source") == "recorded"]
+        codeswitch = [c for c in human if c.get("source") == "codeswitch"]
         syn = [c for c in cs if is_synthetic(c)]
         s = {
             "n": len(corpus),
@@ -213,6 +215,7 @@ def summarize(cells: list[dict]) -> dict:
                 [c["money"] for c in recorded if c.get("money")]),
             "synthetic_n": len(syn),
             "recorded_n": len(recorded),
+            "codeswitch": _codeswitch_summary(codeswitch),
         }
         s["credit_est"] = round(
             sum(float(c["audio_sec"]) * CREDITS_PER_AUDIO_SEC for c in corpus), 1)
@@ -220,12 +223,50 @@ def summarize(cells: list[dict]) -> dict:
     return summary
 
 
-def _grouped(cells: list[dict], key: str) -> dict:
+def _grouped(cells: list[dict], key: str, metric: str = "norm_wer") -> dict:
     out = {}
     for c in cells:
         g = c.get(key) or "?"
-        out.setdefault(g, []).append(c["norm_wer"])
+        out.setdefault(g, []).append(c[metric])
     return {g: met.summarize(v) for g, v in out.items()}
+
+
+def _codeswitch_summary(cells: list[dict]) -> dict:
+    """Track 3: WER/CER on code-switched recordings plus the invoice outcome.
+
+    The human reference is also run through the invoice engine. That "ceiling"
+    separates ASR errors from engine/catalogue limits: the conditional exact rate
+    only counts clips where the reference itself yields the exact invoice.
+    Failed provider calls stay in the denominators (scored as empty transcripts).
+    """
+    if not cells:
+        return {"n": 0}
+    ok = [c for c in cells if c["ok"]]
+    roster = mo.load_roster()
+    scenarios = {s["id"]: s for s in mo.load_scenarios()["scenarios"]}
+    reference_exact: dict[str, bool] = {}
+    for c in cells:
+        if c["id"] not in reference_exact and c.get("scenario_id") in scenarios:
+            outcome = mo.score_scenario(c["text_ref"], scenarios[c["scenario_id"]], roster)["outcome"]
+            reference_exact[c["id"]] = outcome == "exact"
+    eligible = [c for c in cells if reference_exact.get(c["id"])]
+    return {
+        "n": len(cells),
+        "ok": len(ok),
+        "audio_sec": round(sum(float(c["duration"]) for c in cells), 1),
+        "speakers": len({c["id"].split("_")[1] for c in cells if c["id"].count("_") >= 2}),
+        "norm_wer": met.summarize([c["norm_wer"] for c in ok]),
+        "norm_cer": met.summarize([c["norm_cer"] for c in ok]),
+        "basic_wer": met.summarize([c["basic_wer"] for c in ok]),
+        "language_wer": _grouped(ok, "language"),
+        "language_cer": _grouped(ok, "language", "norm_cer"),
+        "money_all": mo.summarize_outcomes([c["money"] for c in cells if c.get("money")]),
+        "reference_exact": sum(1 for v in reference_exact.values() if v),
+        "reference_scored": len(reference_exact),
+        "money_given_reference_exact": mo.summarize_outcomes(
+            [c["money"] for c in eligible if c.get("money")]),
+        "latency_s": met.summarize([c["latency_s"] for c in cells]),
+    }
 
 
 def _pct(x, d):
@@ -269,6 +310,55 @@ def render_report(tag: str, summary: dict) -> str:
             row = " · ".join(f"{g} {v['mean']*100:.1f}% (n={v['n']})"
                              for g, v in sorted(s[key].items()) if v["mean"] is not None)
             lines.append(f"- {label}: {row}")
+        lines.append("")
+    cs_rows = [(p, s["codeswitch"]) for p, s in sorted(summary.items())
+               if (s.get("codeswitch") or {}).get("n")]
+    if cs_rows:
+        lines.append("## Track 3 — Code-switched speech (consented SautiBench recordings)")
+        lines.append("Controlled, consented commerce read-speech benchmark: speakers read invoice "
+                     "briefs in their own code-switched style; references are human verbatim "
+                     "transcripts. Not a claim about spontaneous conversation. Language hints are "
+                     "each provider's documented best configuration (see README), so the "
+                     "comparison is not hint-for-hint identical.")
+        lines.append("")
+        lines.append("| provider | clips (ok) | audio | speakers | norm WER (95% CI) | norm CER | basic WER "
+                     "| invoice exact, all clips | invoice exact, where reference is exact | latency |")
+        lines.append("|---|---|---|---|---|---|---|---|---|---|")
+        for prov, s in cs_rows:
+            w, c, b = s["norm_wer"], s["norm_cer"], s["basic_wer"]
+            wstr = (f"{w['mean']*100:.1f}% (±{w['ci95']*100:.1f})" if w["mean"] is not None and w["ci95"] is not None
+                    else (f"{w['mean']*100:.1f}%" if w["mean"] is not None else "-"))
+            cstr = f"{c['mean']*100:.1f}%" if c["mean"] is not None else "-"
+            bstr = f"{b['mean']*100:.1f}%" if b["mean"] is not None else "-"
+            ma, mc = s["money_all"], s["money_given_reference_exact"]
+            astr = f"{ma.get('exact', 0)}/{ma.get('n', 0)} ({_pct(ma.get('exact', 0), ma.get('n', 0))})"
+            cstr2 = f"{mc.get('exact', 0)}/{mc.get('n', 0)} ({_pct(mc.get('exact', 0), mc.get('n', 0))})"
+            l = s["latency_s"]
+            lstr = f"{l['mean']:.1f}s" if l["mean"] is not None else "-"
+            lines.append(f"| {prov} | {s['n']} ({s['ok']}) | {s['audio_sec']}s | {s['speakers']} | {wstr} | "
+                         f"{cstr} | {bstr} | {astr} | {cstr2} | {lstr} |")
+        lines.append("")
+        lines.append("Per language pair (norm WER / norm CER):")
+        for prov, s in cs_rows:
+            parts = []
+            for g, v in sorted(s["language_wer"].items()):
+                cer = s["language_cer"].get(g, {})
+                if v["mean"] is not None:
+                    parts.append(f"{g} {v['mean']*100:.1f}% / {(cer.get('mean') or 0)*100:.1f}% (n={v['n']})")
+            lines.append(f"- **{prov}**: " + " · ".join(parts))
+        first = cs_rows[0][1]
+        lines.append("")
+        lines.append(f"Reference ceiling: the human reference transcript itself yields the exact invoice on "
+                     f"{first['reference_exact']}/{first['reference_scored']} clips; the last invoice column "
+                     f"counts only those clips.")
+        try:
+            from .codeswitch import annotator_agreement
+            agr = annotator_agreement()
+            if agr.get("n"):
+                lines.append(f"Inter-annotator agreement: norm WER between two human transcripts = "
+                             f"{agr['mean']*100:.1f}% over n={agr['n']} double-annotated clips.")
+        except FileNotFoundError:
+            pass
         lines.append("")
     lines.append("## Track 2 — Sautice product probe (ASR + Sautice parser; separate validity)")
     lines.append("| provider | n | exact | off≤10% | catastrophic>10% | blocked | exact rate |")
@@ -435,8 +525,24 @@ def main() -> int:
     ap.add_argument("--add-recordings", type=str, default=None,
                     help="import user-recorded money briefs from DIR (see data/created/)")
     ap.add_argument("--add-recordings-mapping", type=str, default=None)
+    ap.add_argument("--codeswitch-template", type=str, default=None,
+                    help="write/extend data/sautibench/references.csv from recorder folders in DIR")
+    ap.add_argument("--add-codeswitch", type=str, default=None,
+                    help="append consented code-switched recordings from DIR (Track 3)")
     args = ap.parse_args()
 
+    if args.codeswitch_template:
+        from .codeswitch import write_reference_template
+        n = write_reference_template(Path(args.codeswitch_template))
+        print(f"[cs] references template has {n} rows; fill reference_text by hand (never from ASR)")
+        return 0
+    if args.add_codeswitch:
+        from .codeswitch import ingest
+        added, skipped = ingest(Path(args.add_codeswitch))
+        print(f"[cs] added {len(added)} code-switched rows")
+        for name, why in skipped:
+            print(f"  [cs] skip {name}: {why}")
+        return 0
     if args.synthesize_tts:
         synth_tts(args)
         return 0
