@@ -3,6 +3,7 @@
 <img src="design/logo-light.svg#gh-dark-mode-only" alt="Sautice" height="34">
 
 **Voice-to-invoice for Nigerian SMEs — designed for speech recognition that gets one word in three wrong.**
+Sautice combines the idea of voice (Sauti) in Swahili with invoice, reflecting the product's core workflow: speak a sale naturally, then turn it into a checked invoice.
 
 Entry for the [Sahara CodeSwitch Africa Challenge 2026](https://www.intron.io/compete/) ·
 category *Fintech, Telco & Customer Experience*

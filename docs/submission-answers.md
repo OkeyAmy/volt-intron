@@ -127,5 +127,8 @@ instead of issuing a wrong invoice). Full report: `benchmarks/outputs/pilot/resu
 | Website | https://sautice-voice1.onrender.com |
 | Code | https://github.com/OkeyAmy/volt-intron |
 | Demo video | **YOU must record** — ≤5 min, public/unlisted YouTube, must show code-switching (script: `docs/demo-script.md`) |
-| Benchmark report | PDF generated from real data → host on Drive ("anyone with link") — see `docs/benchmark-report.html` |
-| Benchmark audio (optional) | HuggingFace upload of the consented, de-identified pilot clips (optional) |
+| Benchmark report | https://github.com/OkeyAmy/volt-intron/blob/main/docs/benchmark-report.pdf (public; from `benchmarks/outputs/pilot/results.json`) |
+| Benchmark audio (optional) | Blank. Open sources: [NaijaS2ST](https://huggingface.co/datasets/McGill-NLP/NaijaS2ST) · [nigerian-pidgin-1.0](https://huggingface.co/datasets/asr-nigerian-pidgin/nigerian-pidgin-1.0) · [Nigerian Common Voice](https://huggingface.co/datasets/AlaminI/nigerian_common_voice_dataset) |
+
+Note on the headline: Whisper's 38.2% is over n=55 — its 5 Igbo clips failed because Groq rejects the
+`ig` language code (verified live 2026-09-15; the provider now omits the hint for Igbo).
