@@ -11,6 +11,7 @@ Two tracks, distinct validity claims:
 |---|---|---|---|---|---|---|
 | elevenlabs | 60 | 17.0% (±7.3) | 6.7% | 17.1% | 3.2s | 84.3 |
 | groq_whisper | 60 | 38.2% (±10.9) | 18.8% | 38.0% | 2.5s | 84.3 |
+| intron_sahara | 60 | 16.4% (±5.5) | 7.2% | 17.3% | 19.5s | 84.3 |
 
 ### Track 1 — accent / language / source breakdown (norm WER)
 **elevenlabs**
@@ -23,14 +24,26 @@ Two tracks, distinct validity claims:
 - language: english 11.1% (n=35) · hausa 92.0% (n=5) · igbo 100.0% (n=5) · pidgin 77.9% (n=10) · yoruba 94.6% (n=5)
 - source: alamin-cv 75.2% (n=20) · naija-s2st 10.6% (n=30) · nigerian-pidgin 77.9% (n=10)
 
+**intron_sahara**
+- accent: EN 9.1% (n=15) · EY 6.0% (n=15) · nigerian-cv 18.5% (n=20) · pidgin 38.9% (n=10)
+- language: english 7.4% (n=35) · hausa 14.7% (n=5) · igbo 31.3% (n=5) · pidgin 38.9% (n=10) · yoruba 21.2% (n=5)
+- source: alamin-cv 18.5% (n=20) · naija-s2st 7.6% (n=30) · nigerian-pidgin 38.9% (n=10)
+
 ## Track 2 — Sautice product probe (ASR + Sautice parser; separate validity)
 | provider | n | exact | off≤10% | catastrophic>10% | blocked | exact rate |
 |---|---|---|---|---|---|---|
 | elevenlabs recorded briefs | 7 | 3 | 2 | 0 | 2 | 42.9% |
 | groq_whisper recorded briefs | 7 | 0 | 0 | 0 | 7 | 0.0% |
+| intron_sahara recorded briefs | 7 | 1 | 0 | 0 | 6 | 14.3% |
 | elevenlabs synthetic TTS (deprecated) | 1 | 1 | 0 | 0 | 0 | 100.0% |
 | groq_whisper synthetic TTS (deprecated) | 1 | 0 | 0 | 0 | 1 | 0.0% |
+| intron_sahara synthetic TTS (deprecated) | 1 | 0 | 0 | 0 | 1 | 0.0% |
 
-Supplementary: recorded briefs paired corpus WER = 29.0% (n=7) 
+### Supplementary — recorded briefs WER (paired to canonical scripts)
+| provider | n | norm WER |
+|---|---|---|
+| elevenlabs | 7 | 14.5% |
+| groq_whisper | 7 | 29.0% |
+| intron_sahara | 7 | 60.6% |
 
 Notes: Track 2 blocked rows are cases the parser could not resolve (ASR hallucination or normalization gap in Sautice customer matching). Recorded rows are live human recordings of the SautiBench money briefs; synthetic rows are Intron-TTS clips retained as an auxiliary signal.

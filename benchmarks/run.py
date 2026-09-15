@@ -146,21 +146,38 @@ def is_synthetic(row: dict) -> bool:
 
 def write_outputs(tag: str, cells: list[dict], rows: list[dict],
                   balance: float | None = None, run_cost: dict | None = None) -> dict:
+    """Write merged per-tag outputs.
+
+    Partial runs (a subset of providers) merge with any previous run under the
+    same tag, keyed by (provider, audio_hash), so re-running one provider never
+    erases another's cells. The cost ledger reflects the merged set."""
     out_dir = OUTPUTS / tag
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    with open(out_dir / "per_cell.jsonl", "w") as f:
-        for c in cells:
+    per_tag = out_dir / "per_cell.jsonl"
+    merged: dict[tuple[str, str], dict] = {}
+    if per_tag.exists():
+        for line in per_tag.read_text().splitlines():
+            if not line.strip():
+                continue
+            c = json.loads(line)
+            merged[(c["provider"], c["audio_hash"])] = c
+    for c in cells:
+        merged[(c["provider"], c["audio_hash"])] = c
+    all_cells = list(merged.values())
+
+    with open(per_tag, "w") as f:
+        for c in all_cells:
             f.write(json.dumps(c, ensure_ascii=False, default=str) + "\n")
 
-    summary = summarize(cells)
+    summary = summarize(all_cells)
     cost = {
         "intron_est_credits_all_cells": round(
             sum(float(c["audio_sec"]) * CREDITS_PER_AUDIO_SEC
-                for c in cells if c["provider"] == "intron_sahara"), 2),
+                for c in all_cells if c["provider"] == "intron_sahara"), 2),
         "audio_seconds_by_provider": {
-            p: round(sum(float(c["audio_sec"]) for c in cells if c["provider"] == p), 2)
-            for p in sorted({c["provider"] for c in cells})
+            p: round(sum(float(c["audio_sec"]) for c in all_cells if c["provider"] == p), 2)
+            for p in sorted({c["provider"] for c in all_cells})
         },
         "fresh_cells_this_run": (run_cost or {}).get("fresh", 0),
         "cache_hits_this_run": (run_cost or {}).get("cache_hits", 0),
@@ -169,8 +186,8 @@ def write_outputs(tag: str, cells: list[dict], rows: list[dict],
     }
     results = {
         "tag": tag,
-        "cells": len(cells),
-        "providers": sorted({c["provider"] for c in cells}),
+        "cells": len(all_cells),
+        "providers": sorted({c["provider"] for c in all_cells}),
         "summary": summary,
         "cost": cost,
         "committed_rows": len(rows),
@@ -178,7 +195,7 @@ def write_outputs(tag: str, cells: list[dict], rows: list[dict],
     (out_dir / "results.json").write_text(json.dumps(results, indent=2, default=str))
     (out_dir / "cost.json").write_text(json.dumps(cost, indent=2))
     (out_dir / "report.md").write_text(render_report(tag, summary))
-    print(f"[out] {out_dir}")
+    print(f"[out] {out_dir} ({len(all_cells)} cells, {len({c['provider'] for c in all_cells})} providers)")
     return summary
 
 
@@ -283,9 +300,13 @@ def render_report(tag: str, summary: dict) -> str:
                                    ("exact", "off_small", "catastrophic", "blocked"))
             lines.append(f"| {prov} {label} | {m['n']} | {cells_txt} | {_pct(m.get('exact',0), m.get('n',0))} |")
     lines.append("")
-    lines.append(f"Supplementary: recorded briefs paired corpus WER = "
-                 f"{summary[list(summary)[0]]['recorded_wer']['mean']*100:.1f}% (n={summary[list(summary)[0]]['recorded_n']}) "
-                 if summary and summary[list(summary)[0]]["recorded_n"] else "")
+    lines.append("### Supplementary — recorded briefs WER (paired to canonical scripts)")
+    lines.append("| provider | n | norm WER |")
+    lines.append("|---|---|---|")
+    for prov, s in sorted(summary.items()):
+        rw = s["recorded_wer"]
+        if s["recorded_n"] and rw["mean"] is not None:
+            lines.append(f"| {prov} | {s['recorded_n']} | {rw['mean']*100:.1f}% |")
     lines.append("")
     lines.append("Notes: Track 2 blocked rows are cases the parser could not resolve (ASR "
                  "hallucination or normalization gap in Sautice customer matching). "
