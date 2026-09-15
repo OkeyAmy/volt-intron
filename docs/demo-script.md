@@ -1,70 +1,80 @@
-# Judge demo script (about 3 minutes)
+# Judge demo script (≤ 5 minutes, must show real code-switching)
 
-Uses the implemented app only. Synthetic business details throughout. A fluent
-speaker should do the spoken take in a tested language pair; the typed take is the
-reliable fallback if the room is loud or a device mic is unavailable.
+Uses the implemented app only, on the public Render deployment. Synthetic business
+details throughout. **Every sentence below was run through the invoice engine on
+2026-09-15 and produced the result stated** — do not improvise new phrasing on camera.
+A fluent Pidgin speaker does the spoken takes; typing is the fallback for a noisy room.
 
-## 0. Setup (before the room)
+## 0. Setup (before recording)
 
-```bash
-cd web && npm run dev
-```
-Open http://localhost:3000 in Chrome (or the deployed URL). `web/.env` holds
-`INTRON_API_KEY`; the key never reaches the browser.
+- Open `https://<render-url>/api/health` → `database: postgres`, `databaseReachable: true`,
+  `apiKeyConfigured: true`. If not, fix the Render environment first.
+- Open `https://<render-url>/` in Chrome on a phone or laptop. Speech language: **Pidgin + English**.
+- Quiet room, phone close to the mouth. Screen-record the browser.
 
-## 1. Understand the product (10s)
+## 1. The problem, in one line (15s)
 
-Land on **Make an invoice**. One heading, one example, one obvious action. Say:
-"A trader makes an invoice by speaking — and always checks it before it's created."
+"Nigerian traders sell in mixed speech. Typing an invoice mid-sale is slow, and a misheard
+amount is a wrong invoice. Sautice lets them just say it."
 
-## 2. Speak a sale (30s)
+## 2. Speak a code-switched sale (45s)
 
-Tap **Start speaking**, allow the mic, and say a natural sale in the chosen pair,
-e.g. *"Adebayo Stores bought five bags of cement at twelve thousand five hundred
-naira each."* Tap **Stop recording**. Show the real Sahara transcript appear under
-**Words heard so far**, then the final. Tap **Check the details**.
+Tap **Start speaking**, allow the mic, and say:
 
-> If the room is noisy, use **Type instead** and type the same sentence. Same review.
+> *"Abeg, Adebayo Stores wan buy five bags of Dangote cement, twelve-five each."*
 
-## 3. Check the money (20s)
+Tap **Stop recording**. The Sahara transcript lands in **Here's what we heard** — point out
+the words are editable, and fix any misheard word by typing. Tap **Check the details**.
 
-On **Check your invoice**, point out: customer resolved to Adebayo Stores; Dangote
-Cement, 5 × ₦12,500; the **said** tag showing the price came from what was spoken;
-total **₦62,500** — computed by the money engine, not the model.
+Expected: customer **Adebayo Stores**, **Dangote Cement 50kg ×5 at ₦12,500**, tag **said**,
+total **₦62,500**, ready to create. "Pidgin opener, Pidgin verb, trader shorthand for
+₦12,500 — and the total is computed by the engine, not guessed by a model."
 
-## 4. Correct a field, watch the total (20s) — the standout
+## 3. Correct a field, watch the total (20s)
 
-Tap **Change** on the line, set the price to ₦13,000, **Apply**. The total updates to
-**₦65,000** immediately, recomputed on the server. "The number you see is always the
-number the engine calculated."
+Tap **Change** on the line, set the price to **13000**, **Apply** → total **₦65,000**,
+recomputed on the server.
 
-## 5. Show a real clarification (25s)
+## 4. It asks instead of guessing (60s)
 
-Start over and speak/type *"Musa bought two buckets of paint at eight thousand naira
-each."* Sautice asks **"Which customer did you mean?"** — Musa Hardware vs Musa &
-Brothers — and keeps the rest of the draft. Pick one. "It asks instead of guessing."
+**Tap Edit words**, replace the text with, and check:
 
-## 6. Create and retrieve (25s)
+> *"Musa buy two buckets emulsion paint at eight thousand naira each"*
 
-Tap **Create invoice** → **Invoice created**, INV-xxxxx, "a request for payment — not
-a receipt." Tap **View invoice** (printable, Save-as-PDF) or **Share invoice**. Go to
-**Invoices** and show it in the list; search by customer.
+Expected: **"Which customer did you mean by 'Musa'?"** — Musa Hardware | Musa & Brothers |
+New customer. Pick **Musa Hardware**; the draft becomes ready (₦16,000).
 
-## 7. Recover gracefully (20s)
+Then:
 
-Deny the mic (or pull the network mid-record). Show the honest message — "The
-connection stopped. Please record again or type the details." — with **Record again**
-and **Type instead**. No lost draft, and a double-tap of Create never makes a
-duplicate (idempotent issuance).
+> *"Adebayo Stores bought ten rolls of binding wire at two fifty each"*
+
+Expected: **"What price — could mean ₦250, ₦2,500, ₦250,000?"** "A fluent model would
+silently pick one. We ask, because it's money."
+
+## 5. Create, share, retrieve (40s)
+
+Back on the Adebayo Stores draft: **Create invoice** → **Invoice created**, INV-xxxxx and
+the total. Tap **View invoice** (print / Save as PDF) and **Share invoice**. Open
+**Invoices** and search "Adebayo".
+
+## 6. Graceful failure (20s)
+
+Deny the microphone once: a calm message with **Record again** and **Type instead**, and
+nothing is lost. A double tap on **Create invoice** never makes a duplicate.
+
+## 7. The benchmark, one slide (40s)
+
+Show the benchmark PDF: four models on the same audio — Intron Sahara, Groq Whisper,
+Gemini, ElevenLabs — word and character error rates by language, and the invoice outcome
+on our consented code-switched recordings. Read only numbers that are on the slide.
 
 ## Close (10s)
 
-"Speak or type, check, correct, create, retrieve — with the money always trustworthy
-and nothing faked." Mention the benchmark work lives in the supporting material, not
-in the trader's screen.
+"Say it the way you sell. Check it. Create it. The money is always the engine's, and it asks
+when it isn't sure."
 
 ## Do / don't
 
-- **Do** use synthetic customers, label any pre-recorded fallback footage.
-- **Don't** show debug controls, model stats, fake payment/receipt states, or
-  celebratory effects in the trader UI.
+- **Do** keep the whole video under 5 minutes, and upload as **unlisted or public** on YouTube.
+- **Do** use only the sentences above (verified) and synthetic customers.
+- **Don't** show debug controls, credit balances, or any number not produced live or in the report.

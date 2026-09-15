@@ -107,6 +107,13 @@ describe("code-switched phrasing", () => {
     const i = heuristicExtract("Adebayo Stores bought 5 bags of Dangote cement, pay in fourteen days");
     expect(i.lines).toHaveLength(1);
     expect(i.terms_text).toBe("pay in fourteen days");
+    expect(draft("Adebayo Stores bought 5 bags of Dangote cement, pay in fourteen days").terms.days).toBe(14);
+  });
+
+  it("keeps the days in a Pidgin term said in words", () => {
+    const d = draft("Adebayo Stores buy five bags Dangote cement at twelve-five each, make dem pay in seven days");
+    expect(d.terms.days).toBe(7);
+    expect(d.ready).toBe(true);
   });
 
   it("uses a price given after a comma for the previous line", () => {

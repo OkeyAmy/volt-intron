@@ -88,6 +88,11 @@ class TestCodeSwitchedPhrasing:
         i = heuristic_extract("Adebayo Stores bought 5 bags of Dangote cement, pay in fourteen days")
         assert len(i.lines) == 1
         assert i.terms_text == "pay in fourteen days"
+        assert self._draft("Adebayo Stores bought 5 bags of Dangote cement, pay in fourteen days")["terms"]["days"] == 14
+
+    def test_pidgin_term_with_number_words_keeps_the_days(self):
+        d = self._draft("Adebayo Stores buy five bags Dangote cement at twelve-five each, make dem pay in seven days")
+        assert d["terms"]["days"] == 7 and d["ready"]
 
     def test_price_after_a_comma_prices_the_previous_line(self):
         d = self._draft("Adebayo Stores wan buy five bags of Dangote cement, twelve-five each")

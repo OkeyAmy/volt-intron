@@ -139,11 +139,18 @@ export function readTermDays(text: string): number | "end_of_month" | null {
   if (/\b(on delivery|cash|now|immediately|upfront)\b/.test(t)) return 0;
   let m = /\b(\d+)\s*(day|week|month)s?\b/.exec(t);
   if (m) return Number(m[1]) * { day: 1, week: 7, month: 30 }[m[2] as "day" | "week" | "month"];
-  m = /\b([a-z ]+?)\s*(day|week|month)s?\b/.exec(t);
+  // Only the run of number words directly before the unit counts, so a lead-in
+  // ("dem pay in seven days") cannot swallow the number.
+  m = new RegExp(`\\b((?:(?:${TERM_NUMWORDS})[\\s-]+)*(?:${TERM_NUMWORDS}))\\s*(day|week|month)s?\\b`).exec(t);
   if (m) {
-    const words = m[1].split(/\s+/).filter((w) => w !== "a");
-    const n = wordsToInt(words) ?? (m[1].trim() === "a" || m[1].trim() === "" ? 1 : null);
+    const words = m[1].split(/[\s-]+/).filter((w) => w && w !== "a");
+    const n = words.length ? wordsToInt(words) : 1;
     if (n !== null) return n * { day: 1, week: 7, month: 30 }[m[2] as "day" | "week" | "month"];
   }
   return null;
 }
+
+const TERM_NUMWORDS =
+  "zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|" +
+  "fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|" +
+  "eighty|ninety|hundred|and|a";
