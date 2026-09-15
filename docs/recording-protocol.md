@@ -1,6 +1,8 @@
 # SautiBench — recording protocol
 
-**Live recorder:** <https://harystyleseze.github.io/sautice-recorder/>
+**Recorder:** served by the app at `/recorder.html` (https, so phones can use the microphone), or
+open `scripts/recorder/sautice-recorder.html` locally in Chrome. An older copy without the
+country/accent field is at <https://harystyleseze.github.io/sautice-recorder/>.
 Works on any phone or laptop browser. Nothing is uploaded; the speaker downloads a `.zip` and
 sends it back.
 
@@ -46,15 +48,16 @@ the underlying transaction constant.
 
 ## Consent
 
-Five checkboxes are enforced in the UI — the Start button stays disabled until all five plus a
-pseudonym are supplied (verified by test, not by assumption). They cover: age 18+, research use,
+Five checkboxes are enforced in the UI — the Start button stays disabled until all five are
+ticked. The speaker ID is assigned at random; no name or pseudonym is typed. They cover: age 18+, research use,
 **public HuggingFace hosting under an open licence**, a commitment to say no real customer names,
 phone numbers, addresses or account details, and the right to withdraw before or after
 publication.
 
-Captured per clip: pseudonym, language pair, device, environment, capture sample rate, duration,
-user agent, timestamp, consent version. **No real names.** Every business, customer and product
-in the scenario set is invented.
+Captured per clip: random speaker ID, language pair, country and accent region, domain
+(`commerce/invoicing`), device, environment, capture sample rate, duration, browser and OS family,
+recording date (day only), consent version. **No real names.** Every business, customer and
+product in the scenario set is invented.
 
 ## What to send speakers
 
@@ -71,9 +74,15 @@ in the scenario set is invented.
 
 ## After collection
 
-1. Unzip into `benchmarks/data/sautibench/audio/<speaker>/`.
-2. Transcribe each clip verbatim (including fillers and self-corrections) → ground-truth transcript.
+1. Unzip into `benchmarks/data/sautibench/recordings/<speaker>/` (git-ignored: voice is personal data).
+2. `uv run python -m benchmarks.run --codeswitch-template benchmarks/data/sautibench/recordings`
+   creates `references.csv`; a speaker of the language types each clip verbatim (self-corrections
+   kept, "uh/um" left out) following `benchmarks/data/sautibench/TRANSCRIPTION.md`. Never start from
+   an ASR transcript.
 3. Validate: does the scenario's authored invoice still match what the speaker actually said?
-   If a speaker changed a number, **the audio wins** — update the expected invoice or drop the clip,
-   and record the decision.
-4. Publish to HuggingFace with the manifest, licence and consent record.
+   If a speaker changed a number, **the audio wins** — drop the clip from invoice scoring or update
+   the expected invoice, and record the decision.
+4. `uv run python -m benchmarks.run --add-codeswitch benchmarks/data/sautibench/recordings`, then run
+   the providers (see `benchmarks/README.md`, Track 3).
+5. Publish to HuggingFace only clips whose manifest records `public_hf` consent, with the
+   metadata, licence and consent record.
