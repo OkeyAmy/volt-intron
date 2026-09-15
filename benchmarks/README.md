@@ -91,6 +91,9 @@ Results land in `benchmarks/outputs/<tag>/`:
 - `cost.json` — cost ledger (see below)
 - `per_cell.jsonl` — per-utterance rows incl. transcripts (local only, git-ignored)
 
+Partial runs merge: re-running a single provider under the same tag updates only
+that provider's cells; other providers' results are preserved.
+
 ## Cost transparency
 
 Billing is a real constraint, so spend is tracked at three levels:
