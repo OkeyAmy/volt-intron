@@ -61,6 +61,45 @@ class TestExtraction:
         assert "cement" in i.lines[0].product_query
 
 
+class TestCodeSwitchedPhrasing:
+    """Common Pidgin / code-switched shapes that, before 2026-09-15, lost the customer
+    or turned a payment term or a price into a product line."""
+
+    @staticmethod
+    def _draft(transcript: str) -> dict:
+        return build_draft(heuristic_extract(transcript), ROSTER, {}, today="2026-09-14")
+
+    def test_leading_abeg_keeps_the_customer(self):
+        d = self._draft("Abeg, Adebayo Stores buy five bags of Dangote cement at twelve thousand five hundred naira each")
+        assert d["customer"]["status"] == "resolved"
+        assert d["ready"] and d["total_kobo"] == 6_250_000
+
+    def test_pidgin_purchase_verb_keeps_the_customer(self):
+        i = heuristic_extract("Adebayo Stores wan buy five bags of Dangote cement at twelve-five each")
+        assert i.customer_query == "Adebayo Stores"
+        assert i.lines[0].qty_text == "five" and i.lines[0].price_text == "twelve-five"
+
+    def test_pidgin_payment_term_is_not_a_product(self):
+        d = self._draft("Adebayo Stores buy five bags Dangote cement at twelve-five each, make dem pay in 14 days")
+        assert len(d["lines"]) == 1
+        assert d["ready"] and d["terms"]["days"] == 14
+
+    def test_english_pay_in_days_is_a_term(self):
+        i = heuristic_extract("Adebayo Stores bought 5 bags of Dangote cement, pay in fourteen days")
+        assert len(i.lines) == 1
+        assert i.terms_text == "pay in fourteen days"
+
+    def test_price_after_a_comma_prices_the_previous_line(self):
+        d = self._draft("Adebayo Stores wan buy five bags of Dangote cement, twelve-five each")
+        assert len(d["lines"]) == 1
+        assert d["lines"][0]["unit_price_kobo"] == 1_250_000 and d["ready"]
+
+    def test_a_plain_second_item_is_never_taken_as_a_price(self):
+        i = heuristic_extract("Adebayo Stores bought five bags of cement, two buckets of paint")
+        assert len(i.lines) == 2
+        assert i.lines[1].price_text == "" and "paint" in i.lines[1].product_query
+
+
 class TestDraftComputation:
     def _draft(self, transcript, selections=None):
         return build_draft(heuristic_extract(transcript), ROSTER, selections or {}, today="2026-09-14")

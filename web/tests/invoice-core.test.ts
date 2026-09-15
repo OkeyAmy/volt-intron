@@ -5,6 +5,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { draftFromRequest } from "@/lib/invoice/core";
+import { heuristicExtract } from "@/lib/invoice/core/extract";
 import { readAmount, readQuantity, isAmbiguous } from "@/lib/invoice/core/naira";
 import { resolveCustomer, resolveProduct, ROSTER } from "@/lib/invoice/core/roster";
 
@@ -76,5 +77,49 @@ describe("draft computation", () => {
     const d = draft("invoice for 5 bags of cement at 12500 each for customer Zonatech");
     const cq = d.questions.find((q) => q.id === "customer");
     expect(cq?.options?.some((o) => o.value === "NEW")).toBe(true);
+  });
+});
+
+// Mirrors TestCodeSwitchedPhrasing in tests/test_invoice.py.
+describe("code-switched phrasing", () => {
+  it("keeps the customer after a leading 'Abeg,'", () => {
+    const d = draft("Abeg, Adebayo Stores buy five bags of Dangote cement at twelve thousand five hundred naira each");
+    expect(d.customer.status).toBe("resolved");
+    expect(d.ready).toBe(true);
+    expect(d.total_kobo).toBe(6_250_000);
+  });
+
+  it("recognises a Pidgin purchase verb", () => {
+    const i = heuristicExtract("Adebayo Stores wan buy five bags of Dangote cement at twelve-five each");
+    expect(i.customer_query).toBe("Adebayo Stores");
+    expect(i.lines[0].qty_text).toBe("five");
+    expect(i.lines[0].price_text).toBe("twelve-five");
+  });
+
+  it("reads a Pidgin payment term instead of making it a product", () => {
+    const d = draft("Adebayo Stores buy five bags Dangote cement at twelve-five each, make dem pay in 14 days");
+    expect(d.lines).toHaveLength(1);
+    expect(d.ready).toBe(true);
+    expect(d.terms.days).toBe(14);
+  });
+
+  it("reads 'pay in fourteen days' as a term", () => {
+    const i = heuristicExtract("Adebayo Stores bought 5 bags of Dangote cement, pay in fourteen days");
+    expect(i.lines).toHaveLength(1);
+    expect(i.terms_text).toBe("pay in fourteen days");
+  });
+
+  it("uses a price given after a comma for the previous line", () => {
+    const d = draft("Adebayo Stores wan buy five bags of Dangote cement, twelve-five each");
+    expect(d.lines).toHaveLength(1);
+    expect(d.lines[0].unit_price_kobo).toBe(1_250_000);
+    expect(d.ready).toBe(true);
+  });
+
+  it("never takes a plain second item as a price", () => {
+    const i = heuristicExtract("Adebayo Stores bought five bags of cement, two buckets of paint");
+    expect(i.lines).toHaveLength(2);
+    expect(i.lines[1].price_text).toBe("");
+    expect(i.lines[1].product_query).toContain("paint");
   });
 });
