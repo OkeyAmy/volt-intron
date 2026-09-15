@@ -97,11 +97,12 @@ accurate enough to trust with money.
 
 ## Why this is hard, in numbers
 
-Intron's Sahara v2.5 is the strongest code-switching model available for African languages, and
-it publishes **34.3% average word error rate** on code-switched speech (against 53.8% for Gemini
-3.6). Intron's own CEO puts it plainly: *"roughly one word in three comes out wrong."* The
-independent [AfriSwitch benchmark](https://huggingface.co/datasets/intronhealth/AfriSwitch) finds
-the best of five systems averages **35.93% WER**, with none below 24% on any language.
+Intron reports an average **34.3% word error rate** for Sahara v2.5 across 12 code-switched African
+languages, against 53.8% for Gemini 3.6 — which, as
+[TechCabal](https://techcabal.com/2026/08/26/intron-voice-ai/) summarises it, means *"about one word
+wrong in three."* The [AfriSwitch benchmark](https://arxiv.org/abs/2608.26434) (61.36 hours of
+in-the-wild code-switched speech, 16 languages) finds the best of five systems averages
+**35.93% WER**, with no system below 24% on any language.
 
 So the question worth answering is not *"can we transcribe African code-switched speech?"* It is:
 
@@ -125,20 +126,21 @@ error rate cannot see that distinction; an invoice can.
 ## Who it is for
 
 Nigerian SMEs and micro-traders who sell business-to-business and already keep records by voice or
-on paper. Nigeria has roughly 40 million MSMEs. The design target is a mid-range Android phone on
-mobile data in a noisy environment, operated by someone with no accounting software experience.
+on paper. Nigeria has 39.6 million MSMEs, accounting for 87.9% of national employment
+([SMEDAN–NBS National MSME Survey 2021](https://www.nigerianstat.gov.ng/elibrary/read/966)). The
+design target is a mid-range Android phone on mobile data in a noisy environment, operated by
+someone with no accounting software experience.
 
 ## How it works
 
-The designed flow — speak naturally, and the system transcribes through Intron Sahara, resolves who
-and what you meant against your own customer and product list, computes the money deterministically,
-shows you what it understood, asks about anything it is unsure of, and issues the invoice only after
-you confirm.
+Speak naturally. Intron Sahara transcribes the code-switched speech and the words appear in an
+editable box, so a misheard word can be fixed before anything else happens. The engine then
+resolves who and what you meant against your own customer and product list, computes the money
+deterministically, shows you the draft, asks about anything it is unsure of, and issues the
+invoice only after you confirm.
 
-> **Built so far:** the deterministic money engine and the ambiguity-preserving number grammar, both
-> tested and runnable today. The resolver, agent and invoice engine are still being built — see
-> [Status](#status) for the line-by-line breakdown. Nothing in this README is written as working
-> software unless that table says it is.
+> **This flow runs today** in the web app (see [Status](#status)). Nothing in this README is written
+> as working software unless that table says it is.
 
 The invoice is the proof. The product is **voice → verified business action**.
 
@@ -159,21 +161,19 @@ switch point.
 ## Architecture
 
 ```
-Browser ──PCM16──> voice gateway ──Bearer on handshake──> Intron Sahara STT
-                                                              │
-                                                          transcript
-                                                              ▼
-                              LLM emits TYPED ACTIONS AS DATA (strict JSON schema)
-                                                              │
-                                          deterministic executor validates + applies
-                                                              ▼
-                        naira number grammar  +  tenant-scoped entity resolution
-                                                              ▼
-                              money engine — integer kobo, no floats, half-up
-                                                              ▼
-                                  risk policy ⇒ ASK | PREVIEW | CONFIRM
-                                                              ▼
-                            issued invoice · PDF · audit event · Intron TTS reply
+Browser AudioWorklet (16 kHz PCM16)
+  ├─ stream ──> Node voice gateway (web/server.mts, key server-side) ──Bearer──> Sahara streaming STT
+  │                └─ recoverable stream failure ──> bounded 60 s buffer ──> Sahara sync file STT
+  └─ upload (serverless) ──> /api/voice/transcribe ──> Sahara sync file STT
+                                     │  transcript — editable by the trader
+                                     ▼
+          deterministic extractor (Pidgin-aware) ──> tenant-scoped resolver (abstains on ambiguity)
+                                     ▼
+          naira number grammar (ambiguity sets) ──> money engine — integer kobo, no floats, half-up
+                                     ▼
+          draft + clarification questions ──> trader answers ──> version-bound, idempotent confirm
+                                     ▼
+          issued invoice (Postgres / SQLite) · printable page · share link
 ```
 
 ### Three design decisions, and what each one cost
@@ -181,14 +181,15 @@ Browser ──PCM16──> voice gateway ──Bearer on handshake──> Intron
 Written as **constraint → decision → tradeoff**, so it is clear what was forced by a platform and
 what was actually chosen.
 
-**1. Deterministic financial core with a typed action boundary.**
-*Constraint:* Groq's strict `json_schema` mode cannot be combined with tool-calling or streaming.
-*Decision:* the model emits typed actions as **data**; a deterministic executor validates and
-applies them. The model never computes a total. Money is an integer count of kobo that rejects
-floats outright, because float arithmetic silently loses fractions of a kobo and produces a total
-the business never agreed to.
-*Tradeoff:* no autonomous multi-step tool loops. A novel request becomes a clarification rather
-than an improvisation — less autonomy, bought back as auditability.
+**1. No language model in the money path.**
+*Constraint:* at published code-switched error rates, a transcript can be fluent and still wrong
+about an amount, and a generative model can "correct" it into a plausible wrong number.
+*Decision:* extraction is a deterministic, tested rule set (Python engine with a TypeScript port
+kept in parity), and money is an integer count of kobo that rejects floats outright, because float
+arithmetic silently loses fractions of a kobo.
+*Tradeoff:* less flexible phrasing than an LLM — unusual wording becomes a clarification question
+rather than an improvisation. Common Pidgin shapes ("abeg", "wan buy", "make dem pay in 14 days")
+are handled explicitly and tested.
 
 **2. Uncertainty-preserving, risk-based confirmation.**
 *Constraint:* at published code-switched error rates, raw transcript text is not sufficient
@@ -208,6 +209,8 @@ rather than a failure — and a confidently wrong match is treated as worse than
 *Implementation detail rather than a design choice:* the backend voice gateway is **forced**, not
 preferred — Intron authenticates the STT WebSocket with an `Authorization` header on the handshake,
 which browser JavaScript cannot set. A useful side effect is that the API key never reaches the client.
+When the stream fails recoverably, the gateway keeps the recording (≤60 s, in memory) and sends it to
+Sahara's synchronous file endpoint instead of losing it; serverless hosts use that endpoint directly.
 
 ## Status
 
@@ -215,31 +218,38 @@ Honest separation of what runs today from what is still being built.
 
 | Component | Status |
 |---|---|
-| Money engine — integer kobo, float-rejecting, half-up rounding | **Runs today** · 27 tests |
-| Naira number grammar — ambiguity-preserving | **Runs today** · 51 tests |
-| Intron STT streaming + TTS integration | **Verified working** against the live API |
-| Speaker recorder — consent-gated, publishes no PII | **Live** |
+| Money engine — integer kobo, float-rejecting, half-up rounding | **Runs today** |
+| Naira number grammar — ambiguity-preserving | **Runs today** |
+| Invoice engine — extractor (Pidgin-aware), resolver, draft + questions | **Runs today** · Python engine with TypeScript port kept in parity |
+| Tenant-scoped entity resolver — abstains on confusable names | **Runs today** |
+| Web app — speak/type → editable transcript → check → create → invoices | **Runs today** (Next.js; Postgres in production, SQLite locally) |
+| Intron Sahara streaming STT via the voice gateway | **Verified** against the live API |
+| Intron Sahara sync file STT — gateway fallback and serverless upload path | **Verified** against the live API |
+| Version-bound, idempotent invoice confirmation | **Runs today** |
+| Speaker recorder — consent-gated, publishes no PII | **Built** (`/recorder.html`) |
 | Evaluation scenario set — 30 scenarios, computed ground truth | **Built** |
-| Design system and logo | **Built** |
-| Invoice engine, state machine | Not built |
-| Tenant-scoped entity resolver | Not built |
-| Agent layer (Groq) | Not built |
-| Benchmark harness and results | Not built |
-| Web app — Next.js + voice gateway | **Gateway live** at `/api/voice/stream`; UI in progress |
+| Benchmark harness — 4 models, WER/CER + invoice outcome, reproducible corpus | **Built** · results in `benchmarks/outputs/` |
+| LLM extraction layer | **Not used** — extraction is deterministic by design |
+| Intron TTS | **Not in the product** — used once to make a smoke-test clip |
 
-`uv run pytest` → **78 passed**, with no network and no credentials.
+`uv run pytest` → **115 tests**, and `cd web && pnpm test` → **112 tests**, with no network and no
+credentials.
 
 ## Evaluation plan
 
-Benchmarking Intron Sahara against additional speech models on the same audio, with one frozen
-normalisation policy fixed before any scoring.
+Intron Sahara is benchmarked against Groq Whisper, Google Gemini and ElevenLabs Scribe on the same
+audio, with one frozen normalisation policy fixed before any scoring. Full method, language-hint
+table and commands: [`benchmarks/README.md`](benchmarks/README.md).
 
-- **AfriSwitch** — real human code-switched speech, out-of-domain, comparable to published figures.
-- **SautiBench** — our own invoice-domain recordings, consented and de-identified, with ground-truth
-  transcripts *and* ground-truth invoice JSON. Planned as a pilot evaluation set, reported
-  speaker-stratified.
-- **Adversarial safety set** — near-duplicate customers, `"two fifty"` vs `"twelve-five"`,
-  quantity/price transposition, mid-utterance self-correction.
+- **Track 1 — open corpora** — human-transcribed Nigerian speech (Nigerian Common Voice subset,
+  NaijaS2ST dev, Nigerian Pidgin), rebuilt reproducibly by `benchmarks.load_data`. AfriSwitch is
+  gated, so it is not used.
+- **Track 3 — SautiBench code-switched recordings** — our own invoice-domain recordings, consented
+  and de-identified, with human verbatim transcripts *and* ground-truth invoice JSON, scored for WER/CER
+  and invoice outcome.
+- **Track 2 — product probe** — recorded English briefs through the whole voice→invoice stack.
+- **Adversarial safety set** (inside the scenarios) — near-duplicate customers, `"two fifty"` vs
+  `"twelve-five"`, quantity/price transposition, mid-utterance self-correction.
 
 Reported as a task-outcome taxonomy rather than a single score, because the row that matters is
 *unsafe-incorrect-issuance* — a wrong invoice actually issued — and its target is zero.
@@ -256,8 +266,10 @@ speaker IDs are randomly assigned (`SPK-8EB2`), so no real name can reach the pu
 user-agent strings are bucketed to browser and OS family rather than stored raw, and timestamps are
 day-precision. Every speaker agrees to public dataset hosting and may withdraw at any time. Every
 business, customer and product in the evaluation set is invented — no real customer names, phone
-numbers or account details are recorded. API keys stay server-side, forced by the protocol. Raw
-audio is not retained by default in the product.
+numbers or account details are recorded. API keys stay server-side, forced by the protocol. The
+product does not store recordings: the gateway holds audio in memory only (capped at 60 s) and clears
+it when the session settles. No invoice is issued without the trader's explicit confirmation, and an
+invoice is a request for payment, never a charge.
 
 ## Honesty
 
