@@ -62,7 +62,12 @@ server.on("upgrade", (req: IncomingMessage, socket: Duplex, head) => {
 
   // A WebSocket handshake is not subject to the same-origin policy, so without this
   // check any page the user visits could open this socket and spend Intron credits.
-  if (!isAllowedOrigin(req.headers.origin, ALLOWED_ORIGINS)) {
+  // Always allow the gateway's OWN origin (the browser loaded the page from this same
+  // host, so origin === host is same-origin and safe) in addition to the configured
+  // APP_URL allowlist. This lets a container deploy work without setting APP_URL.
+  const host = req.headers.host;
+  const selfOrigins = host ? [`https://${host}`, `http://${host}`] : [];
+  if (!isAllowedOrigin(req.headers.origin, [...ALLOWED_ORIGINS, ...selfOrigins])) {
     rejectUpgrade(socket, 403, "Forbidden");
     return;
   }
