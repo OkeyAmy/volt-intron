@@ -41,6 +41,17 @@ https://www.nist.gov/itl/iad/mltg/openasr-challenge · Open ASR Leaderboard
 Gladia benchmarking guide https://docs.gladia.io/chapters/pre-recorded-stt/benchmarking ·
 AssemblyAI how-to-evaluate https://www.assemblyai.com/blog/how-to-evaluate-speech-recognition-models
 
+Metric references (2026 multilingual practice — why we report CER and NWER
+alongside WER):
+- OpenWER — cross-lingual scoring; language-specific normalization cuts
+  multilingual WER up to ~25 pt vs whisper-normalizer+jiwer, so our WER for
+  hausa/igbo/yoruba is an **upper bound** https://arxiv.org/abs/2606.21237
+- FER/TER — WER misreads tonal/phonetic loss as lexical error for African
+  languages (Yoruba BERT e.g. WER 78.8% vs CER 30.5%); complement with CER
+  https://aclanthology.org/2026.africanlp-main.14/
+- AfriVox-v2 — production metrics EWER/NWER (entity/numeric WER) as the
+  deployment-critical numbers https://arxiv.org/abs/2605.03590
+
 Splits/licenses are as declared on each Hugging Face dataset card; the
 `dev` vs `train` split selection is frozen in `pilot_manifest_info.json`.
 
@@ -134,6 +145,8 @@ calls are never cached and will re-bill on retry.
 |---|---|---|
 | `pilot_manifest.csv`, `pilot_manifest_info.json`, `mapping.json`, `record_prompts.md` | committed | provenance / config, tiny |
 | `outputs/*/report.md`, `results.json`, `cost.json` | committed | aggregate evidence |
+| `outputs/*/transcripts/<provider>.tsv` | committed | raw per-cell hypotheses (reference + raw text + ins/del/sub + WER/CER) — the transparency artifact every aggregate re-derives from |
+| `outputs/*/ref_audit.md`, `ref_audit.tsv` | committed | reference-quality audit + flagged cells (incl. provider API failures) |
 | `data/hub_cache/` (2.8 GB parquet) | ignored | regenerable via `load_data`; pull is resumable |
 | `data/**/audio/` (16k wavs) | ignored | regenerable, large |
 | `data/sautibench/tts/` | ignored | AI-generated, credits to recreate |

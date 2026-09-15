@@ -1,0 +1,69 @@
+id	source	language	n_providers	n_ok	median_pairwise_wer	median_ref_wer	flags	text_ref
+alamin_english_1614	alamin-cv	english	3	3	0.167	0.333		Turn left onto the slip road
+alamin_english_2408	alamin-cv	english	3	3	0.0	0.0		Not the same thing a bit!
+alamin_english_4517	alamin-cv	english	3	3	0.0	0.0		I like cooking my jollof rice in the oven.
+alamin_english_7851	alamin-cv	english	3	3	0.2	0.0		That was the absolute worst.
+alamin_english_8104	alamin-cv	english	3	3	0.167	0.0		Yes, it is snowing in Copenhagen.
+alamin_hausa_1968	alamin-cv	hausa	3	3	0.8	0.0	low_cross_provider_agreement,outlier:groq_whisper	Bitrus na da wani shiri.
+alamin_hausa_2144	alamin-cv	hausa	3	3	0.833	0.4	low_cross_provider_agreement,outlier:groq_whisper	Meyasa kika damu da Aliyu?
+alamin_hausa_2486	alamin-cv	hausa	3	3	1.0	0.5	low_cross_provider_agreement,outlier:groq_whisper	Ina tsammanin na gano.
+alamin_hausa_4943	alamin-cv	hausa	3	3	0.833	0.333	low_cross_provider_agreement,outlier:groq_whisper	An turo ni na raka ki.
+alamin_hausa_7955	alamin-cv	hausa	3	3	1.0	0.0	low_cross_provider_agreement,outlier:groq_whisper	Sun bi wannan hanyar.
+alamin_igbo_1812	alamin-cv	igbo	3	2	0.4	0.2	outlier:groq_whisper	Ọ ka nọ ndụ ugbua
+alamin_igbo_2013	alamin-cv	igbo	3	2	0.0	0.0	outlier:groq_whisper	ézì
+alamin_igbo_3028	alamin-cv	igbo	3	2	0.0	0.5	REF_MISMATCH_CANDIDATE,outlier:groq_whisper	maazị Abang
+alamin_igbo_4657	alamin-cv	igbo	3	2	0.667	0.667	low_cross_provider_agreement,outlier:groq_whisper	n'ịtụ akwụkwọ.
+alamin_igbo_7499	alamin-cv	igbo	3	2	0.0	0.0	outlier:groq_whisper	otu onye so na ya bụ òtù
+alamin_yoruba_1763	alamin-cv	yoruba	3	3	1.0	0.0	low_cross_provider_agreement,outlier:groq_whisper	Tọ́pẹ́ lu ẹran ìyá àgbà pa.
+alamin_yoruba_3181	alamin-cv	yoruba	3	3	0.857	0.375	low_cross_provider_agreement,outlier:groq_whisper	Ajá fẹ́ràn à ti máa jẹ eegun lọ́pọ̀lọpọ̀.
+alamin_yoruba_4622	alamin-cv	yoruba	3	3	1.0	0.273	low_cross_provider_agreement,outlier:groq_whisper	Ìlú Ìbàdàn ni wọ́n tí ṣe àgbẹ́kalẹ̀ ẹgbẹ́ ọmọ Yorúbá tuntun.
+alamin_yoruba_5744	alamin-cv	yoruba	3	3	0.857	0.429	low_cross_provider_agreement,outlier:groq_whisper	Àwọn jàndùkú agbébọn jí èrò ọkọ̀ mẹ́fà.
+alamin_yoruba_7867	alamin-cv	yoruba	3	3	1.0	0.111	low_cross_provider_agreement,outlier:groq_whisper	Bàbá Àdìsá àti Ìyá Àdìsá ti fi ayé sílẹ̀.
+naija_EN_1976	naija-s2st	english	3	3	0.2	0.1		And that's when I tried to do this art.
+naija_EN_2028	naija-s2st	english	3	3	0.167	0.167		Dieye turned professional seven years ago.
+naija_EN_2596	naija-s2st	english	3	3	0.0	0.0		Golf is a complete sport, she said.
+naija_EN_2688	naija-s2st	english	3	3	0.143	0.143		I also work for maybe 50 minutes.
+naija_EN_2929	naija-s2st	english	3	3	0.25	0.25		There are things that won’t be forgotten.
+naija_EN_3363	naija-s2st	english	3	3	0.0	0.0		You walk, you think, and you concentrate.
+naija_EN_3961	naija-s2st	english	3	3	0.0	0.0		But scientists are aiming to change that.
+naija_EN_4078	naija-s2st	english	3	3	0.0	0.0		But that talent makes them unique.
+naija_EN_4374	naija-s2st	english	3	3	0.0	0.0		Lehane said he has high hopes.
+naija_EN_6054	naija-s2st	english	3	3	0.4	0.4	outlier:groq_whisper	That is something Labor opposes.
+naija_EN_7101	naija-s2st	english	3	3	0.111	0.0		“For the world, it means the hope of peace.
+naija_EN_9133	naija-s2st	english	3	3	0.0	0.0		I train in the morning, noon and night.
+naija_EN_9711	naija-s2st	english	3	3	0.0	0.0		But then, in her first match, she won.
+naija_EN_9858	naija-s2st	english	3	3	0.25	0.286		Lets not write off the young people.
+naija_EN_9974	naija-s2st	english	3	3	0.1	0.1		It was the third year in a row of losses.
+naija_EY_2341	naija-s2st	english	3	3	0.0	0.0		They can contribute photos taken during that time.
+naija_EY_3945	naija-s2st	english	3	3	0.0	0.0		More than 95% of Senegalese are Muslim.
+naija_EY_4999	naija-s2st	english	3	3	0.182	0.0		Every day of my lunch hour is sacrificed for voluntary work.
+naija_EY_5070	naija-s2st	english	3	3	0.0	0.0		But the rules are unfamiliar to many Nigerians.
+naija_EY_5911	naija-s2st	english	3	3	0.143	0.143		You walk, you think, and you concentrate.
+naija_EY_5919	naija-s2st	english	3	3	0.182	0.2		There are some other artists that Im very excited about.
+naija_EY_6146	naija-s2st	english	3	3	0.0	0.0		And, they really pushed me, like, You should be doing something bigger.
+naija_EY_6627	naija-s2st	english	3	3	0.25	0.0		Nigerian Khalifa Ibrahim plays for the Kano Titans.
+naija_EY_6924	naija-s2st	english	3	3	0.111	0.111		The 5th Chukkers went on to win the tournament.
+naija_EY_8005	naija-s2st	english	3	3	0.0	0.0		I train in the morning, noon and night.
+naija_EY_8353	naija-s2st	english	3	3	0.273	0.25		The riders move at speeds of up to 65 kilometers per hour.
+naija_EY_8424	naija-s2st	english	3	3	0.0	0.0		But to me, I feel safer on a horse than in a car.
+naija_EY_8628	naija-s2st	english	3	3	0.2	0.2		Malick showed the vibrant youth.
+naija_EY_9111	naija-s2st	english	3	3	0.167	0.083		When asked how many competitions she has won, she can’t answer.
+naija_EY_9604	naija-s2st	english	3	3	0.154	0.077		I’m in the gym three or four times per week, she said.
+pidgin_1791	nigerian-pidgin	pidgin	3	3	0.875	0.25	low_cross_provider_agreement,outlier:groq_whisper	na for sunday punch dis matter tok so
+pidgin_1950	nigerian-pidgin	pidgin	3	3	0.778	1.0	low_cross_provider_agreement	also show say dem get good relationship with dia teacher and no be di teacher koboko dem get relationship with
+pidgin_2186	nigerian-pidgin	pidgin	3	3	0.545	0.364	low_cross_provider_agreement	you fit choose to package am as fruit salads and deliver
+pidgin_2542	nigerian-pidgin	pidgin	3	3	0.5	0.462	outlier:groq_whisper	for di visit wey hapun for dis morning di govnor say him happy
+pidgin_3471	nigerian-pidgin	pidgin	3	3	0.75	0.5	low_cross_provider_agreement,outlier:intron_sahara	na him dash many politician years of sentence
+pidgin_6305	nigerian-pidgin	pidgin	3	3	0.857	1.5	low_cross_provider_agreement	heavyweights like senate president
+pidgin_6991	nigerian-pidgin	pidgin	3	3	0.556	0.429	low_cross_provider_agreement,outlier:groq_whisper	i happy as di fan welcom am
+pidgin_7468	nigerian-pidgin	pidgin	3	3	0.2	0.2		billings way oregun lagos nigeria
+pidgin_9313	nigerian-pidgin	pidgin	3	3	0.7	0.111	low_cross_provider_agreement,outlier:groq_whisper	fela go really dey shake im head inside grave
+pidgin_9779	nigerian-pidgin	pidgin	3	3	0.818	0.417	low_cross_provider_agreement,outlier:groq_whisper	pray for buhari and no take time carry am go court scientists
+rec_s01	recorded	english	3	3	0.455	0.455		5 bags of Dangote Cement at 12,500 naira for Adebayo Stores
+rec_s02	recorded	english	3	3	0.211	0.2		3 bags of BUA Cement at 12,100 naira, and 2 buckets of Emulsion Paint at 8,000 naira for Chinedu Enterprises
+rec_s03	recorded	english	3	3	1.0	0.091	low_cross_provider_agreement,outlier:intron_sahara	10 lengths of Iron Rod at 8,500 naira for Musa Hardware
+rec_s05	recorded	english	3	3	0.5	0.5		1 trip of Sharp Sand at 85,000 naira for Funmilayo Trading Co
+rec_s13	recorded	english	3	3	0.923	0.25	low_cross_provider_agreement,outlier:intron_sahara	12 lengths of PVC Pipe at 4,200 naira for Rahman Tijani Stores
+rec_s15	recorded	english	3	3	0.25	0.167		5 units of Waterproof Cement Additive at 6,500 naira for Musa & Brothers
+rec_s28	recorded	english	3	3	0.737	0.368	low_cross_provider_agreement,outlier:intron_sahara	3 trips of Granite at 120,000 naira, and 2 trips of Sharp Sand at 85,000 naira for Chinedu Enterprises
+tts_s01	synthetic	english	3	3	0.182	0.0		5 bags of Dangote Cement at 12,500 naira for Adebayo Stores
