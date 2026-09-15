@@ -1,138 +1,139 @@
 {
   "tag": "pilot",
-  "cells": 68,
+  "cells": 136,
   "providers": [
-    "intron_sahara"
+    "elevenlabs",
+    "groq_whisper"
   ],
   "summary": {
-    "intron_sahara": {
+    "groq_whisper": {
       "n": 60,
       "norm_wer": {
-        "mean": 0.1642,
-        "n": 60,
-        "ci95": 0.0552,
-        "sd": 0.2182
+        "mean": 0.3819,
+        "n": 55,
+        "ci95": 0.1091,
+        "sd": 0.413
       },
       "norm_cer": {
-        "mean": 0.0719,
-        "n": 60,
-        "ci95": 0.0318,
-        "sd": 0.1256
+        "mean": 0.1881,
+        "n": 55,
+        "ci95": 0.0564,
+        "sd": 0.2133
       },
       "basic_wer": {
-        "mean": 0.1733,
-        "n": 60,
-        "ci95": 0.0554,
-        "sd": 0.2188
+        "mean": 0.3795,
+        "n": 55,
+        "ci95": 0.11,
+        "sd": 0.4162
       },
       "recorded_wer": {
-        "mean": 0.6063,
+        "mean": 0.2901,
         "n": 7,
-        "ci95": 0.3204,
-        "sd": 0.3464
+        "ci95": 0.1756,
+        "sd": 0.1898
       },
-      "ok_rate": 1.0,
+      "ok_rate": 0.9265,
       "latency_s": {
-        "mean": 19.4505,
+        "mean": 2.5288,
         "n": 68,
-        "ci95": 4.6038,
-        "sd": 19.3694
+        "ci95": 0.2231,
+        "sd": 0.9388
       },
       "accent_breakdown": {
         "nigerian-cv": {
-          "mean": 0.1848,
+          "mean": 0.7516,
           "n": 20,
-          "ci95": 0.0985,
-          "sd": 0.2106
+          "ci95": 0.1707,
+          "sd": 0.3648
         },
         "EN": {
-          "mean": 0.0906,
+          "mean": 0.1209,
           "n": 15,
-          "ci95": 0.0711,
-          "sd": 0.1284
+          "ci95": 0.1131,
+          "sd": 0.2041
         },
         "EY": {
-          "mean": 0.0605,
+          "mean": 0.0914,
           "n": 15,
-          "ci95": 0.0536,
-          "sd": 0.0967
+          "ci95": 0.0678,
+          "sd": 0.1224
         },
         "pidgin": {
-          "mean": 0.389,
+          "mean": 0.7787,
           "n": 10,
-          "ci95": 0.2056,
-          "sd": 0.2874
+          "ci95": 0.2462,
+          "sd": 0.3442
         }
       },
       "source_breakdown": {
         "alamin-cv": {
-          "mean": 0.1848,
+          "mean": 0.7516,
           "n": 20,
-          "ci95": 0.0985,
-          "sd": 0.2106
+          "ci95": 0.1707,
+          "sd": 0.3648
         },
         "naija-s2st": {
-          "mean": 0.0756,
+          "mean": 0.1062,
           "n": 30,
-          "ci95": 0.0428,
-          "sd": 0.1147
+          "ci95": 0.0631,
+          "sd": 0.169
         },
         "nigerian-pidgin": {
-          "mean": 0.389,
+          "mean": 0.7787,
           "n": 10,
-          "ci95": 0.2056,
-          "sd": 0.2874
+          "ci95": 0.2462,
+          "sd": 0.3442
         }
       },
       "language_breakdown": {
         "english": {
-          "mean": 0.0743,
+          "mean": 0.111,
           "n": 35,
-          "ci95": 0.039,
-          "sd": 0.1176
+          "ci95": 0.0544,
+          "sd": 0.1641
         },
         "hausa": {
-          "mean": 0.1467,
+          "mean": 0.92,
           "n": 5,
-          "ci95": 0.2245,
-          "sd": 0.1809
+          "ci95": 0.1216,
+          "sd": 0.098
         },
         "igbo": {
-          "mean": 0.3133,
+          "mean": 1.0,
           "n": 5,
-          "ci95": 0.3348,
-          "sd": 0.2696
+          "ci95": null,
+          "sd": 0.0
         },
         "yoruba": {
-          "mean": 0.2125,
+          "mean": 0.9464,
           "n": 5,
-          "ci95": 0.1817,
-          "sd": 0.1464
+          "ci95": 0.0818,
+          "sd": 0.0659
         },
         "pidgin": {
-          "mean": 0.389,
+          "mean": 0.7787,
           "n": 10,
-          "ci95": 0.2056,
-          "sd": 0.2874
+          "ci95": 0.2462,
+          "sd": 0.3442
         }
       },
       "money": {
         "n": 8,
-        "exact": 1,
+        "exact": 0,
         "off_small": 0,
         "catastrophic": 0,
-        "blocked": 7,
-        "ready": 1,
-        "exact_rate": 0.125
+        "blocked": 8,
+        "ready": 0,
+        "exact_rate": 0.0
       },
       "money_scenario": {
         "n": 7,
-        "exact": 1,
+        "exact": 0,
         "off_small": 0,
         "catastrophic": 0,
-        "blocked": 6,
-        "ready": 1,
-        "exact_rate": 0.1429
+        "blocked": 7,
+        "ready": 0,
+        "exact_rate": 0.0
       },
       "money_synthetic": {
         "n": 1,
@@ -145,12 +146,163 @@
       },
       "money_recorded": {
         "n": 7,
+        "exact": 0,
+        "off_small": 0,
+        "catastrophic": 0,
+        "blocked": 7,
+        "ready": 0,
+        "exact_rate": 0.0
+      },
+      "synthetic_n": 1,
+      "recorded_n": 7,
+      "credit_est": 84.3
+    },
+    "elevenlabs": {
+      "n": 60,
+      "norm_wer": {
+        "mean": 0.1695,
+        "n": 60,
+        "ci95": 0.0727,
+        "sd": 0.2873
+      },
+      "norm_cer": {
+        "mean": 0.0666,
+        "n": 60,
+        "ci95": 0.0341,
+        "sd": 0.1347
+      },
+      "basic_wer": {
+        "mean": 0.1706,
+        "n": 60,
+        "ci95": 0.0732,
+        "sd": 0.2891
+      },
+      "recorded_wer": {
+        "mean": 0.1452,
+        "n": 7,
+        "ci95": 0.0742,
+        "sd": 0.0803
+      },
+      "ok_rate": 1.0,
+      "latency_s": {
+        "mean": 3.2334,
+        "n": 68,
+        "ci95": 0.257,
+        "sd": 1.0813
+      },
+      "accent_breakdown": {
+        "nigerian-cv": {
+          "mean": 0.1607,
+          "n": 20,
+          "ci95": 0.1016,
+          "sd": 0.217
+        },
+        "EN": {
+          "mean": 0.0563,
+          "n": 15,
+          "ci95": 0.0544,
+          "sd": 0.0982
+        },
+        "EY": {
+          "mean": 0.0775,
+          "n": 15,
+          "ci95": 0.0444,
+          "sd": 0.0801
+        },
+        "pidgin": {
+          "mean": 0.4948,
+          "n": 10,
+          "ci95": 0.3498,
+          "sd": 0.489
+        }
+      },
+      "source_breakdown": {
+        "alamin-cv": {
+          "mean": 0.1607,
+          "n": 20,
+          "ci95": 0.1016,
+          "sd": 0.217
+        },
+        "naija-s2st": {
+          "mean": 0.0669,
+          "n": 30,
+          "ci95": 0.0337,
+          "sd": 0.0903
+        },
+        "nigerian-pidgin": {
+          "mean": 0.4948,
+          "n": 10,
+          "ci95": 0.3498,
+          "sd": 0.489
+        }
+      },
+      "language_breakdown": {
+        "english": {
+          "mean": 0.0621,
+          "n": 35,
+          "ci95": 0.0292,
+          "sd": 0.0881
+        },
+        "hausa": {
+          "mean": 0.2467,
+          "n": 5,
+          "ci95": 0.2586,
+          "sd": 0.2083
+        },
+        "igbo": {
+          "mean": 0.2333,
+          "n": 5,
+          "ci95": 0.3608,
+          "sd": 0.2906
+        },
+        "yoruba": {
+          "mean": 0.1295,
+          "n": 5,
+          "ci95": 0.201,
+          "sd": 0.1619
+        },
+        "pidgin": {
+          "mean": 0.4948,
+          "n": 10,
+          "ci95": 0.3498,
+          "sd": 0.489
+        }
+      },
+      "money": {
+        "n": 8,
+        "exact": 4,
+        "off_small": 2,
+        "catastrophic": 0,
+        "blocked": 2,
+        "ready": 6,
+        "exact_rate": 0.5
+      },
+      "money_scenario": {
+        "n": 7,
+        "exact": 3,
+        "off_small": 2,
+        "catastrophic": 0,
+        "blocked": 2,
+        "ready": 5,
+        "exact_rate": 0.4286
+      },
+      "money_synthetic": {
+        "n": 1,
         "exact": 1,
         "off_small": 0,
         "catastrophic": 0,
-        "blocked": 6,
+        "blocked": 0,
         "ready": 1,
-        "exact_rate": 0.1429
+        "exact_rate": 1.0
+      },
+      "money_recorded": {
+        "n": 7,
+        "exact": 3,
+        "off_small": 2,
+        "catastrophic": 0,
+        "blocked": 2,
+        "ready": 5,
+        "exact_rate": 0.4286
       },
       "synthetic_n": 1,
       "recorded_n": 7,
@@ -158,12 +310,13 @@
     }
   },
   "cost": {
-    "intron_est_credits_all_cells": 108.19,
+    "intron_est_credits_all_cells": 0,
     "audio_seconds_by_provider": {
-      "intron_sahara": 245.89
+      "elevenlabs": 245.89,
+      "groq_whisper": 245.89
     },
-    "fresh_cells_this_run": 0,
-    "cache_hits_this_run": 68,
+    "fresh_cells_this_run": 5,
+    "cache_hits_this_run": 131,
     "est_fresh_intron_credits_this_run": 0.0,
     "balance_snapshot": 1353.77
   },
