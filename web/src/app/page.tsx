@@ -84,6 +84,7 @@ export default function Home() {
   const [typing, setTyping] = useState(!VOICE);
   const [typed, setTyped] = useState("");
   const [shareNote, setShareNote] = useState("");
+  const [degradedNote, setDegradedNote] = useState("");
 
   const phaseRef = useRef<Phase>(phase);
   useEffect(() => { phaseRef.current = phase; }, [phase]);
@@ -186,17 +187,22 @@ export default function Home() {
         setMeta(`session ${(String(msg.sessionId ?? "")).slice(0, 8)}… · credits ${msg.creditBalance}`);
       } else if (msg.type === "partial") {
         setPartial(String(msg.text ?? ""));
-      } else if (msg.type === "final") {
-        const r = msg.result as { transcript?: string; msStopToFinal?: number | null; partialCount?: number };
-        setFinalText(r?.transcript ?? "");
+      } else if (msg.type === "degraded") {
+        // Live streaming broke, but the gateway is buffering the recording and will
+        // transcribe it via Intron's file API when the user stops. Keep recording.
+        setDegradedNote(String(msg.message ?? "Live transcription is temporarily unavailable. Keep speaking — we'll process your recording when you stop."));
         setPartial("");
-        setMeta(`heard in ${Math.round((r?.msStopToFinal ?? 0) / 100) / 10}s`);
+      } else if (msg.type === "final") {
+        const r = msg.result as { transcript?: string; msStopToFinal?: number | null };
+        setFinalText(r?.transcript ?? "");
+        setPartial(""); setDegradedNote("");
+        setMeta(r?.msStopToFinal ? `heard in ${Math.round(r.msStopToFinal / 100) / 10}s` : "processed");
         setPhase("done");
         closeAll();
       } else if (msg.type === "error") {
-        // Pre-session errors never billed a session, so ride through them by
-        // reconnecting; the audio kept arriving and will be replayed on open.
-        if (phaseRef.current === "recording" && !intronReadyRef.current) { reconnect(); return; }
+        // The gateway owns recovery (it retries the connection and falls back to the
+        // file API). An error MESSAGE here is a final decision, not a transport blip —
+        // show it, never reconnect (that would be a retry storm).
         fail(String(msg.message ?? "We couldn't use this recording. Please record again or type the details."));
       }
     };
@@ -222,7 +228,7 @@ export default function Home() {
 
   const start = useCallback(async () => {
     setError(""); setPartial(""); setFinalText(""); setMeta(null); setElapsed(0);
-    setFlow("compose"); setIssued(null); setTyping(false); setShareNote("");
+    setFlow("compose"); setIssued(null); setTyping(false); setShareNote(""); setDegradedNote("");
     setPhase("starting");
     gensRef.current = 0;
     commitPendingRef.current = false;
@@ -276,6 +282,12 @@ export default function Home() {
   }, [teardownAudio]);
 
   const cancel = useCallback(() => { closeAll(); setPhase("idle"); setPartial(""); setError(""); }, [closeAll]);
+
+  // Auto-stop at 60s so a recording always fits Intron's file-API limit (used by
+  // the fallback). One invoice never needs longer.
+  useEffect(() => {
+    if (phase === "recording" && elapsed >= 60) stop();
+  }, [phase, elapsed, stop]);
 
   // Return to the compose screen without touching the microphone (used after an
   // invoice is created, and everywhere on a voice-disabled deployment).
@@ -388,7 +400,9 @@ export default function Home() {
             <div className="sr-meter" role="progressbar" aria-label="Microphone level" aria-valuenow={Math.round(level * 100)} aria-valuemin={0} aria-valuemax={100}>
               <div className="sr-meterFill" style={{ width: `${Math.round(level * 100)}%` }} />
             </div>
-            <p className="sr-meta">Speaking {langLabel}</p>
+            {degradedNote
+              ? <p className="sr-degraded" role="status">{degradedNote}</p>
+              : <p className="sr-meta">Speaking {langLabel}</p>}
           </>
         )}
 
