@@ -3,13 +3,15 @@
 /**
  * Draft review: transcript -> draft -> answer questions -> confirm -> invoice.
  *
- * Every figure shown here comes from the server (the Python money engine); this
+ * Every figure shown here comes from the server (the invoice money engine); this
  * component never computes a total. Confirmation is bound to the draft's version,
  * and a fresh idempotency key is minted once per review so a double-click cannot
  * issue two invoices.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Draft, DraftQuestion } from "@/lib/invoice/bridge";
+import { formatIsoDay } from "@/lib/invoice/format";
+import { OFFLINE_TEXT, readJson } from "@/lib/http";
 
 interface Selections {
   customer_id?: string;
@@ -17,28 +19,27 @@ interface Selections {
   lines: Array<{ product_id?: string; product_new_name?: string; qty?: number; unit_price_naira?: string }>;
 }
 
-/** Parse a response as JSON without throwing on an empty/non-JSON body (e.g. a
- *  gateway timeout page), so the user sees a clear message, not a parser error. */
-async function readJson(res: Response): Promise<Record<string, unknown>> {
-  const text = await res.text();
-  if (!text) return { ok: false, error: `The server didn't respond (status ${res.status}). Please try again.` };
-  try { return JSON.parse(text) as Record<string, unknown>; }
-  catch { return { ok: false, error: `Unexpected response from the server (status ${res.status}). Please try again.` }; }
-}
-
-export default function DraftReview({ transcript, onIssued, onCancel }: {
+export default function DraftReview({ transcript, onIssued, onEditWords }: {
   transcript: string;
-  onIssued: (id: string, number: string) => void;
-  onCancel: () => void;
+  onIssued: (id: string, number: string, total: string | null) => void;
+  onEditWords: () => void;
 }) {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
   const [busy, setBusy] = useState(true);
+  const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  // A missing database can't be fixed by retrying, so no Try again button for it.
+  const [retryable, setRetryable] = useState(true);
   const [editLine, setEditLine] = useState<number | null>(null);
   const selRef = useRef<Selections>({ lines: [] });
   const idemRef = useRef<string>(crypto.randomUUID());
+
+  const showError = useCallback((data: Record<string, unknown>, fallback: string) => {
+    setError((data.error as string) ?? fallback);
+    setRetryable(data.code !== "DB_NOT_CONFIGURED");
+  }, []);
 
   const fetchDraft = useCallback(async (selections: Selections, id: string | null) => {
     const res = await fetch("/api/invoice/draft", {
@@ -50,14 +51,14 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
   }, [transcript]);
 
   const applyDraft = useCallback((data: Record<string, unknown>) => {
-    if (!data.ok || !data.draft) { setError((data.error as string) ?? "Could not build the draft."); return; }
+    if (!data.ok || !data.draft) { showError(data, "We couldn't read those details. Please try again."); return; }
     setDraft(data.draft as Draft); setDraftId((data.draftId as string) ?? null); setVersion((data.version as number) ?? 0);
-  }, []);
+  }, [showError]);
 
   const post = useCallback(async (selections: Selections, id: string | null) => {
     setBusy(true); setError("");
     try { applyDraft(await fetchDraft(selections, id)); }
-    catch (e) { setError(`Could not reach the server: ${(e as Error).message}`); }
+    catch { setError(OFFLINE_TEXT); setRetryable(true); }
     finally { setBusy(false); }
   }, [fetchDraft, applyDraft]);
 
@@ -67,7 +68,7 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
     let cancelled = false;
     fetchDraft({ lines: [] }, null)
       .then((data) => { if (!cancelled) applyDraft(data); })
-      .catch((e) => { if (!cancelled) setError(`Could not reach the server: ${(e as Error).message}`); })
+      .catch(() => { if (!cancelled) { setError(OFFLINE_TEXT); setRetryable(true); } })
       .finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; };
   }, [fetchDraft, applyDraft]);
@@ -102,7 +103,7 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
 
   const confirm = useCallback(async () => {
     if (!draftId) return;
-    setBusy(true); setError("");
+    setBusy(true); setCreating(true); setError("");
     try {
       const res = await fetch("/api/invoice/confirm", {
         method: "POST",
@@ -110,19 +111,33 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
         body: JSON.stringify({ draftId, version, idempotencyKey: idemRef.current }),
       });
       const data = await readJson(res);
-      if (!data.ok) { setError((data.error as string) ?? "Could not issue the invoice."); setBusy(false); return; }
+      if (!data.ok) { showError(data, "We couldn't create the invoice. Please try again."); setBusy(false); setCreating(false); return; }
       const inv = data.invoice as { id: string; number: string };
-      onIssued(inv.id, inv.number);
-    } catch (e) {
-      setError(`Could not reach the server: ${(e as Error).message}`);
-      setBusy(false);
+      onIssued(inv.id, inv.number, draft?.total_display ?? null);
+    } catch {
+      // The idempotency key makes a retry safe: it returns the same invoice.
+      setError(OFFLINE_TEXT); setRetryable(true);
+      setBusy(false); setCreating(false);
     }
-  }, [draftId, version, onIssued]);
+  }, [draftId, version, draft, onIssued, showError]);
 
   if (!draft) {
-    return (
-      <div className="sr-transcript" aria-live="polite">
-        {error ? <span className="sr-error">{error}</span> : <span className="sr-placeholder">Building your draft…</span>}
+    return error ? (
+      <div className="rev">
+        <div className="sr-error" role="alert">{error}</div>
+        <div className="sr-controls">
+          {retryable && <button className="sr-btn sr-primary" onClick={() => post(selRef.current, null)} disabled={busy}>{busy ? "Trying…" : "Try again"}</button>}
+          <button className="sr-btn sr-ghost" onClick={onEditWords} disabled={busy}>Edit words</button>
+        </div>
+      </div>
+    ) : (
+      <div className="rev" aria-busy="true">
+        <p className="sr-status" role="status">Reading the details…</p>
+        <div className="rev-skel" aria-hidden="true">
+          <span className="skel skel-line" style={{ width: "40%" }} />
+          <span className="skel skel-block" />
+          <span className="skel skel-line" style={{ width: "25%", marginLeft: "auto" }} />
+        </div>
       </div>
     );
   }
@@ -176,7 +191,7 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
         />
       )}
 
-      {draft.terms.due_date && <p className="sr-meta">Payment due {draft.terms.due_date}</p>}
+      {draft.terms.due_date && <p className="sr-meta">Payment due {formatIsoDay(draft.terms.due_date)}</p>}
 
       {draft.questions.length > 0 && (
         <div className="rev-questions">
@@ -199,6 +214,7 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
         </div>
       )}
 
+      {busy && !creating && <p className="sr-status" role="status">Updating…</p>}
       {error && <div className="sr-error" role="alert">{error}</div>}
 
       {draft.ready ? (
@@ -206,8 +222,8 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
           <div className="rev-createtotal"><span className="sr-label">Total</span> <strong className="sr-created-total">{draft.total_display}</strong></div>
           <p className="sr-expect">The invoice will be created with these details.</p>
           <div className="sr-controls">
-            <button className="sr-btn sr-primary" onClick={confirm} disabled={busy}>{busy ? "Creating…" : "Create invoice"}</button>
-            <button className="sr-btn sr-ghost" onClick={onCancel} disabled={busy}>Start over</button>
+            <button className="sr-btn sr-primary" onClick={confirm} disabled={busy}>{creating ? "Creating…" : error && retryable ? "Try again" : "Create invoice"}</button>
+            <button className="sr-btn sr-ghost" onClick={onEditWords} disabled={busy}>Edit words</button>
           </div>
         </div>
       ) : (
@@ -215,7 +231,7 @@ export default function DraftReview({ transcript, onIssued, onCancel }: {
           <span className="sr-status">
             {priceQuestion ? "Check the price to see the total." : `Answer the question${draft.questions.length > 1 ? "s" : ""} above to continue.`}
           </span>
-          <button className="sr-btn sr-ghost" onClick={onCancel} disabled={busy}>Start over</button>
+          <button className="sr-btn sr-ghost" onClick={onEditWords} disabled={busy}>Edit words</button>
         </div>
       )}
     </div>
@@ -265,7 +281,7 @@ function FreeInput({ kind, disabled, onSet }: { kind: string; disabled: boolean;
     <div className="rev-opts">
       <input
         className="sr-select"
-        inputMode={numeric ? "numeric" : "text"}
+        inputMode={numeric ? "numeric" : kind === "amount" ? "decimal" : "text"}
         value={v}
         disabled={disabled}
         placeholder={kind === "amount" ? "e.g. 12500" : kind === "number" ? "e.g. 5" : "type here"}

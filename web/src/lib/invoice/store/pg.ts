@@ -7,9 +7,9 @@ import { randomUUID } from "node:crypto";
 import postgres from "postgres";
 import type { Draft } from "../bridge";
 import type { ConfirmResult, InvoiceListItem, InvoiceRow, Store } from "./types";
+import { PG_URL } from "./config";
 
-export const PG_URL =
-  process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || "";
+export { PG_URL };
 
 type Sql = ReturnType<typeof postgres>;
 let sqlSingleton: Sql | null = null;
@@ -111,11 +111,12 @@ export const pgStore: Store = {
       });
       const rows = await sql`SELECT * FROM invoices WHERE id = ${id}`;
       return { status: "created", invoice: hydrateInvoice(rows[0]) } satisfies ConfirmResult;
-    } catch {
+    } catch (e) {
       // A concurrent confirm with the same key won the UNIQUE race; return theirs.
       const raced = await sql`SELECT * FROM invoices WHERE idempotency_key = ${input.idempotencyKey}`;
       if (raced.length) return { status: "duplicate", invoice: hydrateInvoice(raced[0]) };
-      throw new Error("invoice insert failed");
+      // Keep the real cause for the server log; routes never send it to the browser.
+      throw new Error("invoice insert failed", { cause: e });
     }
   },
 

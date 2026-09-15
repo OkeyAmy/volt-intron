@@ -8,7 +8,7 @@ export const metadata = { title: "Help — Sautice" };
 
 export default function HelpPage() {
   return (
-    <main className="page-main">
+    <main id="main" className="page-main">
       <h1 className="page-h1">Help</h1>
 
       <section className="help-card">
@@ -25,9 +25,16 @@ export default function HelpPage() {
         <ul className="help-list">
           <li>Tap <strong>Start speaking</strong>, then allow the microphone when your browser asks.</li>
           <li>Speak normally, then tap <strong>Stop</strong>. Tap <strong>Cancel</strong> to throw the recording away instead.</li>
+          <li>Keep each recording under two minutes. One sale at a time works best.</li>
+          <li>You&apos;ll see the words we heard before anything else happens. Fix any wrong word, then tap <strong>Check the details</strong>.</li>
           <li>If the microphone is blocked, allow it in your browser settings — or tap <strong>Type instead</strong>.</li>
           <li>Recording needs a secure (https) page. On a phone, a quiet spot helps accuracy.</li>
         </ul>
+      </section>
+
+      <section className="help-card">
+        <h2 className="help-h2">Typing instead</h2>
+        <p>Typing works exactly like speaking. Write the sale the way you would say it, in your own words, and you&apos;ll get the same check before the invoice is created.</p>
       </section>
 
       <section className="help-card">
@@ -43,7 +50,7 @@ export default function HelpPage() {
         <p className="sr-meta">The buttons and labels stay in simple English whichever speech language you choose.</p>
       </section>
 
-      <Link className="sr-btn sr-primary" href="/">Make an invoice</Link>
+      <Link className="sr-btn sr-primary help-cta" href="/">Make an invoice</Link>
     </main>
   );
 }
