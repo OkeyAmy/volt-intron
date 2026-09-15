@@ -1,0 +1,661 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Sautice — Voice Sample Recorder</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' role='img' aria-label='Sautice'%3E %3Cg fill='none' stroke-linecap='round' stroke-linejoin='round'%3E %3Cpath d='M2.5 13 Q5.5 3.5 8.5 13 Q11.5 22.5 14.5 13 L29.5 13' stroke='%2316233F' stroke-width='2.6'/%3E %3Cpath d='M17 20.5 L29.5 20.5' stroke='%23C8102E' stroke-width='2.6'/%3E %3C/g%3E %3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;560;620;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================================
+   Sautice design tokens — SINGLE SOURCE OF TRUTH.
+   Consumed by: apps/web (imported) and scripts/recorder (inlined at build time).
+   Never restate a value from this file anywhere else.
+   ========================================================================= */
+
+:root {
+  /* --- colour: ink on paper, from the carbonless invoice book -------------- */
+  --ink:        #16233F;   /* ballpoint blue-black: text, wordmark, settled rules */
+  --ink-soft:   #5A6274;   /* secondary text */
+  --ink-faint:  #646A7A;   /* tertiary text, placeholders — 5.4:1 on leaf (AA normal) */
+  --paper:      #F7F6F2;   /* page ground */
+  --leaf:       #FFFFFF;   /* the sheet you write on */
+  --carbon:     #D9D5CA;   /* DECORATIVE rules/dividers only (1.5:1 — not for control edges) */
+  --carbon-dim: #EAE7DF;   /* hairlines, inset fills */
+  --edge:       #858176;   /* border that IDENTIFIES an input/control — 3.9:1 on leaf */
+
+  /* accents — each means exactly one thing */
+  --settled:    #1F7A5C;   /* confirmed */
+  --settled-bg: #E6F2EC;
+  --query:      #80580D;   /* needs checking — 5.6:1 on query-bg (AA normal) */
+  --query-bg:   #FBF1DE;
+  --tally:      #C8102E;   /* the total rule. also destructive/error. nothing else. */
+  --tally-bg:   #FCE9EC;
+  --danger-solid: #C8102E; /* solid destructive button ground — white label is 5.9:1 */
+  --on-danger:  #FFFFFF;   /* label on --danger-solid, both themes */
+
+  --focus:      #16233F;
+
+  /* --- type --------------------------------------------------------------- */
+  --font: "Archivo", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --t-xs: 0.75rem;    /* 12 */
+  --t-sm: 0.875rem;   /* 14 */
+  --t-md: 1rem;       /* 16 — body */
+  --t-lg: 1.25rem;    /* 20 */
+  --t-xl: 1.5625rem;  /* 25 */
+  --t-2xl: 1.9375rem; /* 31 */
+  --t-3xl: 2.4375rem; /* 39 */
+  --lh-body: 1.55;
+  --lh-tight: 1.2;
+
+  /* --- space (4px base) ---------------------------------------------------- */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px; --s8:64px;
+
+  /* --- form ---------------------------------------------------------------- */
+  --r-sm:6px; --r-md:10px; --r-lg:14px;
+  --measure: 34rem;              /* phone-shaped even on desktop */
+  --rule-w: 2px;                 /* the ruled line weight */
+  --shadow: 0 1px 2px rgba(22,35,63,.06), 0 8px 24px -12px rgba(22,35,63,.18);
+}
+
+/* --- dark: authored, not derived ------------------------------------------ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ink:#EEF1F6; --ink-soft:#A7AFC0; --ink-faint:#8B93A5;
+    --paper:#0E1526; --leaf:#161F33; --carbon:#2C3750; --carbon-dim:#1E2840;
+    --edge:#6B7590;
+    --settled:#43B189; --settled-bg:#16302A;
+    --query:#D6A03F;   --query-bg:#332813;
+    --tally:#FF5A6E;   --tally-bg:#3A1720;
+    --danger-solid:#C8102E; --on-danger:#FFFFFF;
+    --focus:#8FB4FF;
+    --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"] {
+  --ink:#EEF1F6; --ink-soft:#A7AFC0; --ink-faint:#8B93A5;
+  --paper:#0E1526; --leaf:#161F33; --carbon:#2C3750; --carbon-dim:#1E2840;
+  --edge:#6B7590;
+  --settled:#43B189; --settled-bg:#16302A;
+  --query:#D6A03F;   --query-bg:#332813;
+  --tally:#FF5A6E;   --tally-bg:#3A1720;
+  --danger-solid:#C8102E; --on-danger:#FFFFFF;
+  --focus:#8FB4FF;
+  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+/* ============================================================================
+   Base
+   ========================================================================= */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font-family: var(--font); font-size: var(--t-md); line-height: var(--lh-body);
+  font-synthesis-weight: none;
+}
+h1,h2,h3 { line-height: var(--lh-tight); margin: 0; font-weight: 620; letter-spacing: -0.02em; }
+h1 { font-size: var(--t-xl); }
+h2 { font-size: var(--t-lg); }
+p { margin: 0 0 var(--s3); max-width: 68ch; }
+
+/* Money and any figure that must align down a column. */
+.num { font-variant-numeric: tabular-nums; letter-spacing: 0; }
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--r-sm);
+}
+
+/* ============================================================================
+   The rule system — structure carrying meaning, not decoration.
+   A field's underline states how much the system trusts what is above it.
+   ========================================================================= */
+.rule { height: var(--rule-w); border: 0; margin: 0; background: var(--carbon); }
+.rule--settled { background: var(--ink); }                        /* confirmed */
+.rule--check {                                                     /* heard, uncertain */
+  background: repeating-linear-gradient(to right,
+    var(--query) 0 6px, transparent 6px 11px);
+}
+.rule--asking {                                                    /* being asked about now */
+  background: repeating-linear-gradient(to right,
+    var(--ink-faint) 0 3px, transparent 3px 9px);
+}
+.rule--total { height: 3px; background: var(--tally); }            /* money below */
+
+/* ============================================================================
+   Surfaces
+   ========================================================================= */
+.sheet {
+  background: var(--leaf); border: 1px solid var(--carbon-dim);
+  border-radius: var(--r-lg); padding: var(--s5); box-shadow: var(--shadow);
+}
+.wrap { max-width: var(--measure); margin-inline: auto; padding-inline: var(--s4); }
+@media (max-width: 30rem) {
+  .sheet { border-radius: 0; border-inline: 0; margin-inline: calc(var(--s4) * -1); }
+}
+
+/* ============================================================================
+   Controls
+   ========================================================================= */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  width: 100%; min-height: 52px; padding: var(--s3) var(--s5);
+  font: inherit; font-weight: 560; border-radius: var(--r-md); border: 1px solid transparent;
+  cursor: pointer; background: var(--ink); color: var(--leaf);
+  transition: background .12s ease, border-color .12s ease;
+}
+.btn:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 86%, var(--paper)); }
+.btn:disabled { opacity: .38; cursor: not-allowed; }
+.btn--quiet { background: transparent; color: var(--ink); border-color: var(--carbon); }
+.btn--quiet:hover:not(:disabled) { background: var(--carbon-dim); }
+.btn--record { background: var(--tally); color: #fff; }
+.btn--record:hover:not(:disabled) { background: color-mix(in srgb, var(--tally) 88%, #000); }
+
+.field { display: block; margin-top: var(--s4); }
+.field > .label { display: block; font-size: var(--t-sm); color: var(--ink-soft); margin-bottom: var(--s1); }
+.input, select.input {
+  width: 100%; min-height: 48px; padding: var(--s3); font: inherit; color: var(--ink);
+  background: var(--leaf); border: 1px solid var(--carbon); border-radius: var(--r-sm);
+}
+.input::placeholder { color: var(--ink-faint); }
+
+.check { display: flex; gap: var(--s3); align-items: flex-start; padding: var(--s2) 0; cursor: pointer; }
+.check input { flex: 0 0 auto; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--ink); }
+.check span { font-size: var(--t-sm); }
+
+.note { font-size: var(--t-sm); color: var(--ink-soft); }
+.hint { font-size: var(--t-xs); color: var(--ink-faint); }
+
+/* status chips — a word plus a colour, never colour alone */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px;
+  border-radius: 99px; font-size: var(--t-xs); font-weight: 560;
+  background: var(--carbon-dim); color: var(--ink-soft);
+}
+.chip--settled { background: var(--settled-bg); color: var(--settled); }
+.chip--check   { background: var(--query-bg);   color: var(--query); }
+.chip--tally   { background: var(--tally-bg);   color: var(--tally); }
+
+.meter { height: 4px; background: var(--carbon-dim); border-radius: 99px; overflow: hidden; }
+.meter > i { display: block; height: 100%; background: var(--ink); transition: width .3s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+
+/* ---- page-specific ---- */
+body { padding-block: var(--s5) var(--s8); }
+.masthead { display:flex; align-items:center; justify-content:space-between; gap:var(--s4);
+            margin-bottom:var(--s5); }
+.masthead svg { height:26px; width:auto; color:var(--ink); display:block; }
+.stack > * + * { margin-top: var(--s4); }
+.steps { margin:var(--s3) 0 0; padding-left:1.15rem; }
+.steps li { margin:var(--s2) 0; }
+.hide { display:none !important; }
+
+/* recording screen */
+.brief { font-size: var(--t-lg); line-height:1.45; margin:var(--s3) 0 0; max-width:none; }
+.tagrow { display:flex; flex-wrap:wrap; gap:6px; }
+.tagrow:empty { display:none; }
+.progress-row { display:flex; justify-content:space-between; align-items:baseline;
+                font-size:var(--t-xs); color:var(--ink-faint); margin-bottom:var(--s2); }
+.timer { font-size: var(--t-3xl); font-weight:620; text-align:center;
+         margin: var(--s5) 0 var(--s4); font-variant-numeric: tabular-nums; letter-spacing:-.02em; }
+.timer[data-live="1"] { color: var(--tally); }
+.level { height:10px; background:var(--carbon-dim); border-radius:99px; overflow:hidden; margin:var(--s3) 0; }
+.level > i { display:block; height:100%; width:0; background:var(--ink-faint); transition:width .06s linear; }
+.level[data-live="1"] > i { background:var(--settled); }
+.reject { background:var(--tally-bg); color:var(--tally); border-radius:var(--r-md);
+          padding:var(--s3); font-size:var(--t-sm); margin-top:var(--s3); }
+.idcard { text-align:center; padding:var(--s4); background:var(--carbon-dim);
+          border-radius:var(--r-md); font-size:var(--t-xl); font-weight:620;
+          letter-spacing:.06em; font-variant-numeric:tabular-nums; }
+audio { width:100%; margin-top:var(--s4); }
+</style></head><body><div class="wrap">
+
+<div class="masthead"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 32" role="img" aria-label="Sautice">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M2.5 13 Q5.5 3.5 8.5 13 Q11.5 22.5 14.5 13 L29.5 13" stroke="currentColor" stroke-width="2.6"/>
+    <path d="M17 20.5 L29.5 20.5" stroke="#C8102E" stroke-width="2.6"/>
+  </g>
+  <text x="38" y="22" font-family="Archivo, system-ui, -apple-system, sans-serif" font-size="20"
+        font-weight="620" letter-spacing="-0.4" fill="currentColor">Sautice</text>
+</svg><span class="hint">Voice sample recorder</span></div>
+
+<div id="setup" class="stack">
+  <div class="sheet">
+    <h1>Help us test how speech AI hears Nigerian business talk</h1>
+    <p class="note" style="margin-top:var(--s2)">About 20 minutes, 30 short clips. Your name is never collected.</p>
+    <hr class="rule rule--settled" style="margin:var(--s4) 0">
+    <h2>How this works</h2>
+    <ol class="steps">
+      <li>Each card gives you the <b>facts of a sale</b> — not a script.</li>
+      <li><b>Say it your own way</b>, exactly how you would say it to your own staff.</li>
+      <li><b>Mix languages naturally.</b> If you would normally switch between English and
+          Yoruba, Igbo, Hausa or Pidgin mid-sentence, do it. That is the whole point.</li>
+      <li>Don't read it robotically. Hesitations, "ehn", "abeg" and corrections are all welcome.</li>
+    </ol>
+  </div>
+
+  <div class="sheet">
+    <h2>Before you start</h2>
+    <p class="note" style="margin-top:var(--s2)">All five need your agreement.</p>
+    <label class="check"><input type="checkbox" id="c1"><span>I am 18 or older and I am recording my own voice by choice.</span></label>
+    <label class="check"><input type="checkbox" id="c2"><span>My recordings can be used to <b>test speech recognition systems</b> and included in an open research dataset.</span></label>
+    <label class="check"><input type="checkbox" id="c3"><span>The dataset may be published <b>publicly on HuggingFace</b> under an open licence and reused by other researchers.</span></label>
+    <label class="check"><input type="checkbox" id="c4"><span>I will not say any real customer name, phone number, address or account detail. Every name on the cards is invented.</span></label>
+    <label class="check"><input type="checkbox" id="c5"><span>I can ask for my recordings to be deleted at any time, before or after publication.</span></label>
+
+    <div class="field">
+      <span class="label">Your speaker ID</span>
+      <div class="idcard" id="sp"></div>
+      <p class="hint" style="margin-top:var(--s2)">Assigned at random. This is the only identifier
+      published with your recordings — your name is never collected or stored. We know the file is
+      yours because you send it to us yourself.</p>
+    </div>
+
+    <label class="field"><span class="label">Which language will you mix with English?</span>
+      <select class="input" id="lang">
+        <option value="pcm-en">Nigerian Pidgin</option>
+        <option value="yo-en">Yoruba</option>
+        <option value="ig-en">Igbo</option>
+        <option value="ha-en">Hausa</option>
+        <option value="en">English only</option>
+      </select></label>
+    <label class="field"><span class="label">Where is your accent from?</span>
+      <select class="input" id="accent">
+        <option value="NG-south-west">Nigeria — South-West (e.g. Lagos, Ibadan)</option>
+        <option value="NG-south-east">Nigeria — South-East (e.g. Enugu, Onitsha)</option>
+        <option value="NG-south-south">Nigeria — South-South (e.g. Port Harcourt, Benin)</option>
+        <option value="NG-north">Nigeria — North (e.g. Kano, Kaduna, Abuja)</option>
+        <option value="NG-mixed">Nigeria — mixed or other</option>
+        <option value="outside-NG">Outside Nigeria</option>
+      </select></label>
+    <label class="field"><span class="label">What are you recording on?</span>
+      <select class="input" id="dev">
+        <option>Android phone — built-in mic</option>
+        <option>iPhone — built-in mic</option>
+        <option>Laptop — built-in mic</option>
+        <option>Wired earphones or headset</option>
+        <option>Bluetooth earbuds</option>
+      </select></label>
+    <label class="field"><span class="label">Where are you right now?</span>
+      <select class="input" id="env">
+        <option value="quiet_room">Quiet room</option>
+        <option value="office">Office, some background noise</option>
+        <option value="street">Outdoors or street</option>
+        <option value="market">Market or crowd</option>
+        <option value="generator">Generator or fan running</option>
+      </select></label>
+
+    <div class="field">
+      <span class="label">Check your microphone first</span>
+      <button class="btn btn--quiet" id="miccheck" type="button">Test my microphone</button>
+      <div class="level" id="preflight-level" data-live="0" hidden><i></i></div>
+      <p class="hint" id="micresult" style="margin-top:var(--s2)"></p>
+    </div>
+
+    <button class="btn" id="start" style="margin-top:var(--s5)" disabled>Start recording</button>
+    <p class="hint" id="micnote" style="margin-top:var(--s3)"></p>
+  </div>
+</div>
+
+<div id="rec" class="hide stack">
+  <div>
+    <div class="progress-row"><span id="pos"></span><span id="who"></span></div>
+    <div class="meter"><i id="bar" style="width:0"></i></div>
+  </div>
+  <div class="sheet">
+    <div class="tagrow" id="tags"></div>
+    <p class="brief" id="brief"></p>
+    <p class="note" id="note" style="margin-top:var(--s3)"></p>
+  </div>
+  <div>
+    <div class="timer" id="timer">0.0s</div>
+    <div class="level" id="level" data-live="0"><i id="meter"></i></div>
+    <button class="btn btn--record" id="btn">Start speaking</button>
+    <p class="reject hide" id="reject"></p>
+    <button class="btn btn--quiet hide" id="keep" style="margin-top:var(--s3)">Keep this take anyway</button>
+    <audio id="play" controls class="hide"></audio>
+    <button class="btn btn--quiet hide" id="again" style="margin-top:var(--s3)">Record again</button>
+    <button class="btn hide" id="next" style="margin-top:var(--s3)">Keep it, next card</button>
+    <p class="hint" style="margin-top:var(--s3)">Say it once, naturally. If you fumble badly, record again.</p>
+  </div>
+</div>
+
+<div id="done" class="hide">
+  <div class="sheet">
+    <h1>That's everything. Thank you.</h1>
+    <p class="note" id="summary" style="margin-top:var(--s2)"></p>
+    <hr class="rule rule--total" style="margin:var(--s5) 0 var(--s4)">
+    <button class="btn" id="dl">Download my recordings</button>
+    <p class="hint" style="margin-top:var(--s3)">Send the downloaded file back to the team.
+    Nothing was uploaded — the recordings never left your device.</p>
+  </div>
+</div>
+
+</div><script>
+const SCENARIOS = [{"id": "s01", "brief": "5 bags Dangote cement to Adebayo Stores at list price, pay in 14 days.", "tags": ["single_item"], "customer": {"in_roster": true}}, {"id": "s02", "brief": "3 bags BUA cement + 2 buckets emulsion paint to Chinedu Enterprises, pay in 7 days.", "tags": ["multi_item"], "customer": {"in_roster": true}}, {"id": "s03", "brief": "10 lengths of 12mm iron rod to Musa Hardware, add 5,000 delivery, due end of month.", "tags": ["shipping", "terms_phrase"], "customer": {"in_roster": true}}, {"id": "s04", "brief": "20 roofing sheets to Ngozi Ventures, 2,000 delivery, 14 days.", "tags": ["shipping"], "customer": {"in_roster": true}}, {"id": "s05", "brief": "1 trip of sharp sand to Funmilayo Trading Co, payment on delivery.", "tags": ["large_amount"], "customer": {"in_roster": true}}, {"id": "s06", "brief": "6 bags Dangote cement to Adebayo Ventures but at 12,800 each (not list). 14 days.", "tags": ["price_override", "confusable_customer"], "customer": {"in_roster": true}}, {"id": "s07", "brief": "4 lengths 16mm rod to Ibrahim Sani Nig Ltd at 11,000 each. 30 days.", "tags": ["price_override"], "customer": {"in_roster": true}}, {"id": "s08", "brief": "15 bags Lafarge cement at twelve-five each to Blessing Okafor Stores.", "tags": ["price_override", "spoken_shorthand"], "customer": {"in_roster": true}}, {"id": "s09", "brief": "8 buckets emulsion paint to a NEW customer 'Damilola Interiors', give 5,000 discount, 7 days.", "tags": ["discount", "out_of_roster"], "customer": {"in_roster": false}}, {"id": "s10", "brief": "10 bags Dangote cement to Yusuf Abdullahi Trading, add VAT 7.5%, 14 days.", "tags": ["vat"], "customer": {"in_roster": true}}, {"id": "s11", "brief": "2 trips of granite to Uchenna Nwosu Ventures with 7.5% VAT and 20,000 delivery.", "tags": ["vat", "shipping", "large_amount"], "customer": {"in_roster": true}}, {"id": "s12", "brief": "7 bags Dangote cement to a NEW customer 'Okonkwo Brothers Ltd', 14 days.", "tags": ["out_of_roster"], "customer": {"in_roster": false}}, {"id": "s13", "brief": "12 PVC pipes to a NEW customer 'Rahman Tijani Stores', pay in 7 days.", "tags": ["out_of_roster"], "customer": {"in_roster": false}}, {"id": "s14", "brief": "3 buckets paint to NEW customer 'Chiamaka Fabrics', 10,000 delivery.", "tags": ["out_of_roster", "shipping"], "customer": {"in_roster": false}}, {"id": "s15", "brief": "5 units of a NEW product 'Waterproof Cement Additive' at 6,500 each to Musa & Brothers.", "tags": ["out_of_roster_product"], "customer": {"in_roster": true}}, {"id": "s16", "brief": "9 bags cement to Adeboye Stores (NOT Adebayo Stores), 14 days.", "tags": ["confusable_customer"], "customer": {"in_roster": true}}, {"id": "s17", "brief": "4 bags BUA cement (NOT Dangote) to Chinedu & Sons Ltd, 7 days.", "tags": ["confusable_customer", "confusable_product"], "customer": {"in_roster": true}}, {"id": "s18", "brief": "6 lengths of 16mm rod (NOT 12mm) to Emeka Global Services, 30 days.", "tags": ["confusable_product"], "customer": {"in_roster": true}}, {"id": "s19", "brief": "Say the quantity and price ambiguously - e.g. 'cement, twenty five' - so it is genuinely unclear whether 25 is the QUANTITY or the price. Intended: 25 bags at list price.", "tags": ["ambiguous_number", "MUST_ASK"], "customer": {"in_roster": true}}, {"id": "s20", "brief": "Say a price as 'two fifty' for binding wire - ambiguous between 250, 2,500 and 250,000. Intended: 10 rolls at 2,500 each.", "tags": ["ambiguous_number", "MUST_ASK"], "customer": {"in_roster": true}}, {"id": "s21", "brief": "Start wrong then correct yourself mid-sentence: say five bags, then say 'no, no, make am fifteen bags'. Intended final: 15 bags Dangote cement.", "tags": ["self_correction"], "customer": {"in_roster": true}}, {"id": "s22", "brief": "Give quantity and price in an order that invites transposition: 'twelve thousand five hundred naira, five bags'. Intended: 5 bags at 12,500.", "tags": ["transposition_risk"], "customer": {"in_roster": true}}, {"id": "s23", "brief": "Say the number in your local language rather than English if natural (e.g. Yoruba/Igbo/Hausa numeral). Intended: 3 buckets emulsion paint at list price.", "tags": ["native_numeral", "MAY_ASK"], "customer": {"in_roster": true}}, {"id": "s24", "brief": "Mention a customer name that is NOT in the list at all and sounds like nothing else - 'Zainab Kachalla Global'. Intended: 2 bags cement.", "tags": ["out_of_roster", "MUST_NOT_SNAP"], "customer": {"in_roster": false}}, {"id": "s25", "brief": "Ramble naturally: mention the customer, hesitate on the product name, then give quantity and price. Intended: Aisha Bello Enterprises, 8 bags Dangote cement at list.", "tags": ["disfluent"], "customer": {"in_roster": true}}, {"id": "s26", "brief": "Mention two items but change your mind about the second one and drop it. Intended final: only 4 roofing sheets to a NEW customer 'Bukola Roofing Depot'.", "tags": ["retraction", "out_of_roster"], "customer": {"in_roster": false}}, {"id": "s27", "brief": "Give the payment term as a natural phrase, not a number of days ('before month end' / 'next market day' style). Intended: 6 bags cement, end of month.", "tags": ["terms_phrase"], "customer": {"in_roster": true}}, {"id": "s28", "brief": "A big one: 3 trips of granite plus 2 trips sharp sand to Chinedu Enterprises, 50,000 delivery, 30 days.", "tags": ["large_amount", "multi_item"], "customer": {"in_roster": true}}, {"id": "s29", "brief": "A small one: 1 roll of binding wire to Kemi Adeyemi Stores, paid on delivery.", "tags": ["small_amount"], "customer": {"in_roster": true}}, {"id": "s30", "brief": "Use a 'k' shorthand for the price if natural - e.g. '12.5k each'. Intended: 4 bags cement at 12,500.", "tags": ["spoken_shorthand", "confusable_customer"], "customer": {"in_roster": true}}];
+const $ = id => document.getElementById(id);
+const chks = ['c1','c2','c3','c4','c5'].map($);
+// PRIVACY: the speaker ID is randomly assigned, never derived from anything the
+// speaker types. There is therefore no path by which a real name can reach the
+// published manifest. The person <-> ID mapping stays out-of-band with the team.
+const SPEAKER_ID = 'SPK-' + Array.from(crypto.getRandomValues(new Uint8Array(2)))
+  .map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
+$('sp').textContent = SPEAKER_ID;
+const gate = () => $('start').disabled = !chks.every(c=>c.checked);
+chks.forEach(c=>c.onchange=gate); gate();
+if(!navigator.mediaDevices||!window.AudioContext) $('micnote').innerHTML =
+  '<span style="color:var(--tally)">This browser can\'t record audio. Open this page in Chrome or Safari.</span>';
+
+let ctx, stream, analyser, recorder, recChunks=[], recording=false, t0=0, timerId, meterRaf;
+let lastMeasure = null, pendingTake = null;
+let idx = 0, results = [], meta = {};
+
+// Thresholds are deliberately permissive. Blocking a real speaker is far worse
+// than accepting a doubtful clip, because ingest re-validates every file with the
+// full audio in hand while a blocked speaker simply gives up.
+const SILENCE_PEAK = 0.004;      // ~ -48 dBFS
+const SILENCE_RMS  = 0.0015;     // ~ -56 dBFS, overall not per-block
+const MIN_VOICED_FRACTION = 0.02;
+
+function meterPaint(peak){
+  const el = $('meter'); if (!el) return;
+  el.style.width = Math.min(100, Math.round(Math.sqrt(peak) * 140)) + '%';
+  el.parentElement.dataset.live = peak > SILENCE_PEAK ? '1' : '0';
+}
+
+/** Ask for clean audio, but never let a constraint failure cost us the recording. */
+async function openMic(){
+  const ideal = {channelCount:1, echoCancellation:false, noiseSuppression:false, autoGainControl:false};
+  try { return await navigator.mediaDevices.getUserMedia({audio: ideal}); }
+  catch { return await navigator.mediaDevices.getUserMedia({audio: true}); }
+}
+
+/** Live level meter. Purely cosmetic - if it fails, recording is unaffected. */
+function startMeter(){
+  const buf = new Float32Array(analyser.fftSize);
+  const tick = () => {
+    analyser.getFloatTimeDomainData(buf);
+    let peak = 0;
+    for (let i = 0; i < buf.length; i++){ const v = Math.abs(buf[i]); if (v > peak) peak = v; }
+    meterPaint(peak);
+    meterRaf = requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+/**
+ * Decode whatever the browser recorded and measure it honestly.
+ * decodeAudioData gives real PCM regardless of the container, so this works the
+ * same on Safari (mp4) and Chrome (webm) without caring which was produced.
+ */
+async function decodeAndMeasure(blob){
+  const bytes = await blob.arrayBuffer();
+  const ac = new (window.AudioContext || window.webkitAudioContext)();
+  let audio;
+  try { audio = await ac.decodeAudioData(bytes); }
+  catch (e) { ac.close(); return {error:'decode', message:String(e && e.message || e)}; }
+  const data = audio.getChannelData(0);
+  const rate = audio.sampleRate, dur = audio.duration;
+  ac.close();
+
+  let peak = 0, sumSq = 0, voiced = 0, blocks = 0;
+  const BLOCK = 2048;
+  for (let i = 0; i < data.length; i += BLOCK){
+    let bs = 0, bp = 0;
+    const end = Math.min(i + BLOCK, data.length);
+    for (let j = i; j < end; j++){ const v = data[j]; const a = Math.abs(v); if (a > bp) bp = a; bs += v*v; }
+    const n = end - i;
+    const brms = Math.sqrt(bs / n);
+    if (bp > peak) peak = bp;
+    sumSq += bs; blocks++;
+    if (brms > SILENCE_RMS * 3) voiced++;
+  }
+  const rms = Math.sqrt(sumSq / Math.max(1, data.length));
+  return {data, rate, dur, peak, rms, voicedFraction: blocks ? voiced/blocks : 0};
+}
+
+/** Float32 at any rate -> 16 kHz mono PCM16 WAV. */
+function encodeWav16k(data, rate){
+  const target = 16000, ratio = rate / target, n = Math.floor(data.length / ratio);
+  const pcm = new Int16Array(n);
+  for (let i = 0; i < n; i++){
+    const a = Math.floor(i * ratio), b = Math.min(Math.floor((i+1) * ratio), data.length);
+    let sum = 0; for (let j = a; j < b; j++) sum += data[j];
+    let v = b > a ? sum / (b - a) : 0;
+    v = Math.max(-1, Math.min(1, v));
+    pcm[i] = v < 0 ? v * 0x8000 : v * 0x7fff;
+  }
+  const buf = new ArrayBuffer(44 + pcm.length*2), d = new DataView(buf);
+  const str = (o,t) => { for (let i=0;i<t.length;i++) d.setUint8(o+i, t.charCodeAt(i)); };
+  str(0,'RIFF'); d.setUint32(4, 36 + pcm.length*2, true); str(8,'WAVEfmt ');
+  d.setUint32(16,16,true); d.setUint16(20,1,true); d.setUint16(22,1,true);
+  d.setUint32(24,target,true); d.setUint32(28,target*2,true);
+  d.setUint16(32,2,true); d.setUint16(34,16,true);
+  str(36,'data'); d.setUint32(40, pcm.length*2, true);
+  new Int16Array(buf,44).set(pcm);
+  return {blob:new Blob([buf],{type:'audio/wav'}), dur: pcm.length/target};
+}
+
+$('miccheck').onclick = async () => {
+  const btn = $('miccheck'), out = $('micresult'), bar = $('preflight-level');
+  btn.disabled = true; btn.textContent = 'Listening — say something';
+  bar.hidden = false; out.textContent = '';
+  let s2, c2;
+  try {
+    s2 = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,
+      echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
+    c2 = new AudioContext();
+    if (c2.state === 'suspended') { try { await c2.resume(); } catch {} }
+  } catch (e) {
+    out.innerHTML = '<span style="color:var(--tally)">Microphone blocked. Allow it for this page '
+      + 'in your browser settings, then tap Test again.</span>';
+    btn.disabled = false; btn.textContent = 'Test my microphone'; bar.hidden = true; return;
+  }
+  const an = c2.createAnalyser(); an.fftSize = 1024;
+  c2.createMediaStreamSource(s2).connect(an);
+  const buf = new Float32Array(an.fftSize);
+  let best = 0;
+  const started = Date.now();
+  const tick = setInterval(() => {
+    an.getFloatTimeDomainData(buf);
+    let peak = 0;
+    for (let i = 0; i < buf.length; i++) { const v = Math.abs(buf[i]); if (v > peak) peak = v; }
+    if (peak > best) best = peak;
+    bar.dataset.live = peak > SILENCE_PEAK ? '1' : '0';
+    bar.firstElementChild.style.width = Math.min(100, Math.round(Math.sqrt(peak) * 140)) + '%';
+    if (Date.now() - started > 6000) {
+      clearInterval(tick);
+      s2.getTracks().forEach(t => t.stop()); c2.close();
+      bar.hidden = true; btn.disabled = false; btn.textContent = 'Test my microphone';
+      if (best > SILENCE_PEAK) {
+        out.innerHTML = '<span style="color:var(--settled)">Microphone is working. You can start.</span>';
+      } else {
+        out.innerHTML = '<span style="color:var(--tally)">We heard nothing. Check the microphone is '
+          + 'unmuted and that this page is allowed to use it, then test again. Do not start recording '
+          + 'until this passes.</span>';
+      }
+    }
+  }, 60);
+};
+
+$('start').onclick = async () => {
+  try { stream = await openMic(); }
+  catch (e) {
+    $('micnote').innerHTML='<span style="color:var(--tally)">Microphone access was denied. '
+      +'Allow the microphone for this page in your browser settings, then tap Start recording again.</span>';
+    return;
+  }
+  if (!window.MediaRecorder) {
+    $('micnote').innerHTML='<span style="color:var(--tally)">This browser cannot record audio. '
+      +'Please open this page in Chrome or Safari.</span>';
+    return;
+  }
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  if (ctx.state === 'suspended') { try { await ctx.resume(); } catch {} }
+  analyser = ctx.createAnalyser(); analyser.fftSize = 1024;
+  ctx.createMediaStreamSource(stream).connect(analyser);   // meter only; never gates capture
+  startMeter();
+
+  const ua = navigator.userAgent;
+  const pick = (re, d) => (re.exec(ua) || [0, d])[1];
+  meta = {speaker_id:SPEAKER_ID, language_pair:$('lang').value,
+          country:$('accent').value==='outside-NG' ? 'other' : 'NG', accent_region:$('accent').value,
+          domain:'commerce/invoicing', metadata_version:2,
+          device:$('dev').value, environment:$('env').value,
+          consent:{age18:true, research_use:true, public_hf:true, no_real_pii:true, withdrawable:true},
+          consent_text_version:1, recorded_date:new Date().toISOString().slice(0,10),
+          browser_family:pick(/(Firefox|Edg|Chrome|Safari)/, 'other'),
+          os_family:pick(/(Android|iPhone|iPad|Windows|Mac|Linux)/, 'other'),
+          capture_sample_rate:ctx.sampleRate};
+  $('setup').classList.add('hide'); $('rec').classList.remove('hide');
+  $('who').textContent = meta.speaker_id;
+  show();
+};
+
+function show(){
+  const s=SCENARIOS[idx];
+  $('pos').textContent='Card '+(idx+1)+' of '+SCENARIOS.length;
+  $('bar').style.width=(idx/SCENARIOS.length*100)+'%';
+  $('brief').textContent=s.brief;
+  $('note').textContent=s.speaker_hint||'';
+  $('tags').innerHTML = (s.tags||[]).filter(t=>!t.startsWith('MUST')&&!t.startsWith('MAY')&&t!=='out_of_roster')
+    .map(t=>'<span class="chip">'+t.replace(/_/g,' ')+'</span>').join('')
+    + (s.customer && !s.customer.in_roster ? '<span class="chip chip--check">new customer</span>':'');
+  $('play').classList.add('hide'); $('again').classList.add('hide'); $('next').classList.add('hide');
+  $('reject').classList.add('hide'); $('keep').classList.add('hide');
+  $('btn').classList.remove('hide'); $('btn').textContent='Start speaking';
+  $('timer').textContent='0.0s'; $('timer').removeAttribute('data-live');
+}
+
+$('btn').onclick = async () => {
+  if (!recording) {
+    recChunks = [];
+    if (ctx.state === 'suspended') { try { await ctx.resume(); } catch {} }
+    let mr;
+    try { mr = new MediaRecorder(stream); }         // let the browser choose its own mime type
+    catch (e) { $('reject').textContent = 'This browser refused to start recording: ' + e.message;
+                $('reject').classList.remove('hide'); return; }
+    recorder = mr;
+    mr.ondataavailable = ev => { if (ev.data && ev.data.size) recChunks.push(ev.data); };
+    mr.start();
+    recording = true; t0 = Date.now();
+    $('btn').textContent = 'Stop';
+    $('timer').setAttribute('data-live','1');
+    $('reject').classList.add('hide');
+    timerId = setInterval(() => $('timer').textContent = ((Date.now()-t0)/1000).toFixed(1)+'s', 100);
+    return;
+  }
+
+  recording = false; clearInterval(timerId); $('timer').removeAttribute('data-live');
+  $('btn').disabled = true; $('btn').textContent = 'Checking…';
+  const done = new Promise(res => { recorder.onstop = res; });
+  recorder.stop();
+  await done;
+  $('btn').disabled = false; $('btn').textContent = 'Start speaking';
+
+  const raw = new Blob(recChunks, { type: recorder.mimeType || 'audio/webm' });
+  const m = await decodeAndMeasure(raw);
+  lastMeasure = m;
+
+  if (m.error) {
+    $('reject').innerHTML = 'We could not read that recording back ('+m.message+'). Please try again.';
+    $('reject').classList.remove('hide'); return;
+  }
+
+  const tooShort = m.dur < 0.4;
+  const tooQuiet = m.peak < SILENCE_PEAK && m.rms < SILENCE_RMS;
+  const notVoiced = m.voicedFraction < MIN_VOICED_FRACTION;
+
+  const {blob, dur} = encodeWav16k(m.data, m.rate);
+  pendingTake = {blob, dur, peak:m.peak, rms:m.rms, voiced:m.voicedFraction};
+
+  if (tooShort || tooQuiet || notVoiced) {
+    // Show the real numbers. If this is a false positive we need to know why, and a
+    // speaker who can hear their own playback must be able to keep the take.
+    $('reject').innerHTML =
+      (tooShort
+        ? 'That was too short to keep. Speak for at least a second, then tap Stop.'
+        : 'We could barely hear that. Play it back — if you can hear yourself clearly, keep it.')
+      + '<br><span style="opacity:.75">level ' + m.peak.toFixed(4)
+      + ' · average ' + m.rms.toFixed(4)
+      + ' · voiced ' + Math.round(m.voicedFraction*100) + '%'
+      + ' · ' + m.dur.toFixed(1) + 's</span>';
+    $('reject').classList.remove('hide');
+    $('play').src = URL.createObjectURL(blob); $('play').classList.remove('hide');
+    if (!tooShort) $('keep').classList.remove('hide');
+    return;
+  }
+
+  acceptTake();
+};
+
+function acceptTake(){
+  $('reject').classList.add('hide'); $('keep').classList.add('hide');
+  results[idx] = pendingTake;
+  $('play').src = URL.createObjectURL(pendingTake.blob); $('play').classList.remove('hide');
+  $('btn').classList.add('hide');
+  $('again').classList.remove('hide'); $('next').classList.remove('hide');
+  $('timer').textContent = pendingTake.dur.toFixed(1)+'s';
+}
+
+$('keep').onclick = () => acceptTake();
+
+$('again').onclick = () => { results[idx]=null; pendingTake=null; show(); };
+$('next').onclick = () => {
+  idx++;
+  if(idx>=SCENARIOS.length){
+    $('rec').classList.add('hide'); $('done').classList.remove('hide');
+    const n=results.filter(Boolean).length, tot=results.filter(Boolean).reduce((a,r)=>a+r.dur,0);
+    $('summary').textContent='You recorded '+n+' clips, '+tot.toFixed(0)+' seconds of audio in total.';
+  } else show();
+};
+
+// minimal STORE-only zip writer (no dependencies, works offline)
+function crc32(u8){let c,t=[];for(let n=0;n<256;n++){c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c}
+  let r=-1;for(let i=0;i<u8.length;i++)r=(r>>>8)^t[(r^u8[i])&255];return (r^-1)>>>0}
+async function zip(files){
+  const enc=new TextEncoder(), parts=[], central=[]; let off=0;
+  for(const f of files){
+    const name=enc.encode(f.name), data=new Uint8Array(await f.blob.arrayBuffer()), crc=crc32(data);
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0,true);
+    lh.setUint16(8,0,true); lh.setUint16(10,0,true); lh.setUint16(12,0,true);
+    lh.setUint32(14,crc,true); lh.setUint32(18,data.length,true); lh.setUint32(22,data.length,true);
+    lh.setUint16(26,name.length,true); lh.setUint16(28,0,true);
+    parts.push(new Uint8Array(lh.buffer),name,data);
+    const ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true);
+    ch.setUint32(16,crc,true); ch.setUint32(20,data.length,true); ch.setUint32(24,data.length,true);
+    ch.setUint16(28,name.length,true); ch.setUint32(42,off,true);
+    central.push(new Uint8Array(ch.buffer),name);
+    off += 30+name.length+data.length;
+  }
+  const cs=central.reduce((a,c)=>a+c.length,0);
+  const eo=new DataView(new ArrayBuffer(22));
+  eo.setUint32(0,0x06054b50,true); eo.setUint16(8,files.length,true); eo.setUint16(10,files.length,true);
+  eo.setUint32(12,cs,true); eo.setUint32(16,off,true);
+  return new Blob([...parts,...central,new Uint8Array(eo.buffer)],{type:'application/zip'});
+}
+
+$('dl').onclick = async () => {
+  $('dl').disabled=true; $('dl').textContent='Preparing your file';
+  const sp=meta.speaker_id;
+  const files=[], manifest=[];
+  results.forEach((r,i)=>{ if(!r) return;
+    const s=SCENARIOS[i], fn=sp+'_'+s.id+'.wav';
+    files.push({name:fn,blob:r.blob});
+    manifest.push(Object.assign({audio_file:fn, scenario_id:s.id, duration_s:+r.dur.toFixed(2),
+      sample_rate:16000, channels:1, peak_amplitude:+(r.peak ?? 0).toFixed(4),
+      voiced_fraction:+(r.voiced ?? 0).toFixed(3)}, meta));
+  });
+  files.push({name:'manifest.json',
+    blob:new Blob([JSON.stringify({speaker:meta, clips:manifest},null,2)],{type:'application/json'})});
+  const b=await zip(files), a=document.createElement('a');
+  a.href=URL.createObjectURL(b); a.download='sautibench_'+sp+'.zip'; a.click();
+  $('dl').textContent='Downloaded';
+};
+</script></body></html>

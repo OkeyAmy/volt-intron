@@ -32,4 +32,5 @@ for k, v in {
 out = root/"scripts/recorder/sautice-recorder.html"
 out.write_text(html)
 (root/"docs/index.html").write_text(html)          # GitHub Pages copy
-print(f"built {out.name} ({out.stat().st_size//1024} KB) -> also docs/index.html")
+(root/"web/public/recorder.html").write_text(html) # served by the app at /recorder.html (https, so phones can record)
+print(f"built {out.name} ({out.stat().st_size//1024} KB) -> also docs/index.html, web/public/recorder.html")
